@@ -1,0 +1,62 @@
+h1{
+	font-size:24px;
+}
+body{
+	font-size:15px;
+}
+#start>a>div{
+	font-size:18px;
+}
+#splash_main{
+	border:3px solid #1885e7;
+	text-align:center;
+	padding-top:75px;
+	height:auto;
+	background-image:url(../images/heart.mob@2x.png);
+	background-size:40px 53px;
+	background-position:center 15px;
+}
+#splash_copy{
+	width:auto;	
+	font-size:15px;
+	line-height:24px;
+	height:auto;
+}
+#splash_copy>h1{
+	font-size:18px;
+}
+#splash_copy>p{
+	font-size:15px;
+	line-height:24px;
+}
+#start{
+	margin-left:auto;
+	margin-right:auto;
+	margin-bottom:30px;
+}
+#terms{
+	display:none;
+}
+#more_info{
+	display:block;
+	text-align:center;
+}
+#splash_footer{
+	display:none;
+}
+#more_info_content{
+	border:1px solid #ccc;
+	padding:12px;
+	width:auto;
+}
+#more_info_content div:last-child{
+	border:none;
+}
+.p_logo_left{
+	position:relative;
+	margin-bottom:12px;
+	overflow:hidden;
+}
+.p_logo_right{
+	margin-left:0px;
+}

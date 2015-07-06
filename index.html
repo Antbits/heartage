@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "//www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="//www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Healthcheck</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="viewport" id="mvp" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="css/healthcheck_main.css" rel="stylesheet" type="text/css" />
+<script>
+window.parent.postMessage('{"w": "600px","h": "560px"}', '*'); 
+var index_obj
+</script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>
+<script src="js/jquery.cookie.js"></script>
+<script src="js/webtrends.min.js"></script>
+<script src="js/app.min.js"></script>
+</head>
+
+<body>
+<div id = "page_loader">
+  <div><img src="images/heartbeat-clear.gif" alt="loading results" width="60" height="90" border="0" /></div>
+</div>
+<div id = "header">
+  <h2>Check your heart age</h2>
+  <h3>Please give us some details about you</h3>
+</div>
+<div id = "mob_header">
+  <h2>Check your heart age</h2>
+</div>
+<div id = "main">
+  <div class= "page" id="page_0">
+    <div id = "splash_main">
+      <h1>Check your heart age</h1>
+      <div id ="splash_copy"></div>
+      <div id = "start" class="form_btn"><a href = "javascript:;">
+        <div>Start</div>
+        </a></div>
+      <div id = "terms">Full <a href = "/aboutNHSChoices/aboutnhschoices/termsandconditions/Pages/termsandconditions.aspx" target="_new">terms and conditions</a> can be read here</div>
+      <div id = "more_info"><a href = "javascript:;" >More information about this tool</a></div>
+    </div>
+    <div id = "splash_footer"></div>
+  </div>
+  <div class= "page" id="page_1">
+    <div class="form_block" id="dob_row">
+      <h3>Date of birth</h3>
+      <div class="col_right">
+        <div class="select_wrap">
+          <select id="dob_day">
+          </select>
+          <div class = "input_label" id = "lbl_dob_day">Day</div>
+        </div>
+        <div class="select_wrap">
+          <select id="dob_month">
+            <option value = "1">01</option>
+            <option value = "2">02</option>
+            <option value = "3">03</option>
+            <option value = "4">04</option>
+            <option value = "5">05</option>
+            <option value = "6">06</option>
+            <option value = "7">07</option>
+            <option value = "8">08</option>
+            <option value = "9">09</option>
+            <option value = "10">10</option>
+            <option value = "11">11</option>
+            <option value = "12">12</option>
+          </select>
+          <div class = "input_label" id = "lbl_dob_month">Month</div>
+        </div>
+        <div class="select_wrap">
+          <select id="dob_year">
+          </select>
+          <div class = "input_label" id = "lbl_dob_year">Year</div>
+        </div>
+      </div>
+    </div>
+    <div class="form_block">
+      <h3>Gender</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"><a href= "javascript:;" id = "gender_1" ><img src = "images/radio_off.png" alt="Male" width="28" height="28" border="0">
+          <div>Male</div>
+          </a></div>
+        <div class="nhs_radio"><a href= "javascript:;" id = "gender_0"><img src = "images/radio_off.png" alt="Female" width="28" height="28" border="0">
+          <div>Female</div>
+          </a></div>
+      </div>
+    </div>
+    <div class="form_block">
+      <h3>Ethnic group</h3>
+      <p>
+        <select id="ethnicity">
+          <option value="1">Not stated</option>
+           <option value="1">White</option>
+          <option value="2">Indian</option>
+          <option value="3">Pakistani</option>
+          <option value="4">Bangladeshi</option>
+          <option value="5">Other Asian</option>
+          <option value="6">Black Caribbean</option>
+          <option value="7">Black African</option>
+          <option value="8">Chinese</option>
+          <option value="9">Other ethnic group</option>
+        </select>
+      </p>
+      <div class="info_link"><a href = "javascript:;" id="ethnicity_info">Why is this important?</a></div>
+    </div>
+    <div class="form_block">
+      <h3>Postcode</h3>
+      <p>
+        <input type="text" id="postcode" value="e.g CB10 2PS"/>
+      </p>
+      <div class="info_link"><a href = "javascript:;" id="postcode_info">Why is this being asked?</a></div>
+    </div>
+    <div class="form_block">
+      <h3>Do you have
+        cardiovascular disease?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "cardio_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "cardio_no"> <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+      </p>
+      <div class="info_link"><a href = "javascript:;" id="cv_info">What is cardiovascular disease?</a></div>
+    </div>
+  </div>
+  <div class= "page" id="page_2">
+    <div class="form_block">
+      <h3>Do you smoke?</h3>
+      <p>
+        <select id="smoke">
+          <option value="0">No</option>
+          <option value="1">I quit</option>
+          <option value="2">I smoke less than 10 a day</option>
+          <option value="3">I smoke less than 20 a day</option>
+          <option value="4">I smoke 20+ a day</option>
+        </select>
+      </p>
+    </div>
+    <div class="form_block" id="h_wrap">
+      <h3>Height</h3>
+      <p>
+      <div>
+        <div class = "units_wrap" id = "h_metric">
+          <input type="text" id="h_cm" value="" />
+          &nbsp;<strong>cm</strong>
+          <div class="units_interface"><a href = "javascript:;">Switch to imperial</a></div>
+        </div>
+        <div class = "units_wrap" id = "h_imperial">
+          <input type="text" id="h_ft" value="" />
+          &nbsp;<strong>ft</strong>
+          <input type="text" id="h_in" value="" />
+          &nbsp;<strong>in</strong>
+          <div class="units_interface"><a href = "javascript:;">Switch to metric</a></div>
+        </div>
+      </div>
+      </p>
+    </div>
+    <div class="form_block" id="w_wrap">
+      <h3>Weight</h3>
+      <p>
+      <div>
+        <div class = "units_wrap" id = "w_metric">
+          <input type="text" id="w_kg" value="" />
+          <div class="units_interface"><a href = "javascript:;">Switch to imperial</a></div>
+          &nbsp;<strong>kg</strong></div>
+        <div class = "units_wrap" id = "w_imperial">
+          <input type="text" id="w_st" value="" />
+          &nbsp;<strong>st</strong>
+          <input type="text" id="w_lb" value="" />
+          &nbsp;<strong>lb</strong>
+          <div class="units_interface"><a href = "javascript:;">Switch to metric</a></div>
+        </div>
+      </div>
+      </p>
+    </div>
+  </div>
+  <div class= "page" id="page_3">
+    <div class="form_block" id="p3a">
+      <h3>Do you know your cholesterol?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "cholesterol_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "cholesterol_no" > <img src = "images/radio_off.png" alt = "No" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+      </p>
+      <div class="info_link"><a href = "javascript:;" id="cholesterol_info">Cholesterol information</a></div>
+    </div>
+    <div class="form_block" id="cholesterol_data">
+      <div class="form_block_row">
+        <h4> Total cholesterol </h4>
+        <div id="t_cholesterol_wrap_a">
+          <input id = "t_cholesterol_a" type = "text" value="">
+          <h5>mmol/L</h5>
+        </div>
+        <div id="t_cholesterol_wrap_b">
+          <input id = "t_cholesterol_b" type = "text" value="">
+          <h5>mg/dl</h5>
+        </div>
+      </div>
+      <div class="form_block_row" id="ch_block">
+        <h4>HDL cholesterol</h4>
+        <div id="hdl_cholesterol_wrap_a">
+          <input id = "hdl_cholesterol_a" type = "text" value="">
+          <h5>mmol/L</h5>
+          <div class="units_interface"><a href="javascript:;">Switch to mg/dl</a></div>
+        </div>
+        <div id="hdl_cholesterol_wrap_b">
+          <input id = "hdl_cholesterol_b" type = "text" value="">
+          <h5>mg/dl</h5>
+          <div class="units_interface"><a href="javascript:;">Switch to mmol/L</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="form_block_warning" id="cholesterol_data_alt"> cholesterol warning </div>
+    <div class="form_block" id="p3b">
+      <h3>Do you know your blood pressure?</h3>
+      <p>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "bp_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "bp_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+      </p>
+      <div class="info_link"><a href = "javascript:;" id="bp_info">Blood pressure information</a></div>
+    </div>
+    <div class="form_block" id = "bp_data">
+      <div class="form_block_row">
+        <h4>Systolic blood pressure</h4>
+        <div id="sys_bp_wrap">
+          <input id = "sys_bp" type = "text" value="">
+          <h5>mmHg</h5>
+        </div>
+      </div>
+    </div>
+    <div class="form_block_warning" id = "bp_data_alt"> BP warning </div>
+    <div class="form_block" id="p3c">
+      <h3> Have you ever received blood pressure treatment?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "bpt_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "bpt_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div><br>
+      <div class="info_link"><a href = "javascript:;" id="bpt_info">Blood pressure treatment</a></div>
+    </div>
+    <div id="ch_error"><img src = "images/bubble_arrow.png" width="22" height="11"><div id="ch_error_inner"></div></div>
+  </div>
+  <div class= "page" id="page_4">
+    <div class="form_block">
+      <h3>Do you have diabetes?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "diabetes_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "diabetes_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+    </div>
+    <div class="form_block">
+      <h3>Do you have rheumatoid arthritis?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "arthritis_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "arthritis_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+    </div>
+    <div class="form_block">
+      <h3>Do you have chronic kidney disease?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "kidney_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "kidney_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+    </div>
+    <div class="form_block">
+      <h3>Have you had atrial fibrillation?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "af_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "af_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+    </div>
+    <div class="form_block" id="cvd_row">
+      <h3>Has a close relative under 60 been told<br>they have a cardiovascular disease?</h3>
+      <div class = "col_right">
+        <div class="nhs_radio"> <a href= "javascript:;" id = "rcvd_yes" > <img src = "images/radio_off.png" alt = "Yes" width="28" height="28" border="0">
+          <div>Yes</div>
+          </a> </div>
+        <div class="nhs_radio"> <a href= "javascript:;" id = "rcvd_no" > <img src = "images/radio_off.png" alt = "No" width="28" height="28" border="0">
+          <div>No</div>
+          </a> </div>
+      </div>
+      <br />
+      <div class="info_link"><a href = "javascript:;" id="cvd_info">What does this mean?</a></div>
+    </div>
+  </div>
+  <div class= "page" id="page_5">
+    <h2> Your results </h2>
+    <div class = "result_row" id="r1">
+      <div id="r1_title"></div>
+      <div class="col_right" id="r1_heart_age">0</div>
+      <div id="r1_content"></div>
+    </div>
+    <div class = "result_row" id = "r2">
+      <div id="r2_content"></div>
+    </div>
+    <div class = "result_row" id = "r3"></div>
+    <h2>What affects your heart age?</h2>
+    <div id = "advice_wrap"></div>
+    <div class = "result_row" id = "r4">
+      <div id="r4_content"></div>
+    </div>
+  </div>
+  <div id = "nav">
+    <div id = "dots"><img src="images/d_up.png" name="d1" width="18" height="18" id="d1" alt = "Page 1" /><img src="images/d_up.png" name="d2" width="18" height="18" id="d2" alt = "Page 2" /><img src="images/d_up.png" name="d3" width="18" height="18" id="d3" alt = "Page 3" /><img src="images/d_up.png" name="d4" width="18" height="18" id="d4" alt = "Page 4" /></div>
+    <div id = "back" class="form_btn_dull"><a href = "javascript:;">
+      <div>Back</div>
+      </a></div>
+    <div id = "next" class="form_btn"><a href = "javascript:;">
+      <div>Next</div>
+      </a></div>
+    <div id = "reset" class="form_btn"><a href = "javascript:;">
+      <div>Start again</div>
+      </a></div>
+  </div>
+</div>
+<div id = "result_loader">
+  <div><img src="images/heartbeat-clear.gif" alt="loading results" width="60" height="90" border="0" /></div>
+  <h3>Generating results</h3>
+</div>
+<div id="dialog_outer"></div>
+<div id="dialog_inner">
+  <div id="dialog_close"><a href="javascript:;" class="close"><img src="images/close2.png" alt="close" width="17" height="17" /></a></div>
+  <div id="dialog_content"></div>
+</div>
+<div class= "page" id="more_info_content">
+</div>
+<div id = "shim"></div>
+<script language="JavaScript" type="text/javascript">
+$(document).ready(function(){
+	index_obj = new index();
+})
+</script>
+</body>
+</html>
