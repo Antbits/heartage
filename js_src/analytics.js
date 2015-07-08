@@ -1,3 +1,9 @@
+/*
+This file forms part of the NHS Choices Heart Age Tool.
+It is ©2014 NHS Choices.
+It is released under version 3 of the GNU General Public License
+Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+*/
 function analytics(vc,d,o){
 	var self = this
 	var data = d

@@ -1,3 +1,12 @@
+/*
+This file forms part of the NHS Choices Heart Age Tool.
+It is ©2014 NHS Choices.
+It is released under version 3 of the GNU General Public License
+Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+
+It contains code derived from https://github.com/BritCardSoc/JBS3Risk released by University of Cambridge.
+It also contains code derived from http://qrisk.org/lifetime/QRISK-lifetime-2011-opensource.v1.0.tgz released by ClinRisk Ltd.
+*/
 function Q65_lifetime(){
 	var self = this
 	var then = new Date()

@@ -1,3 +1,9 @@
+/*
+This file forms part of the NHS Choices Heart Age Tool.
+It is ©2014 NHS Choices.
+It is released under version 3 of the GNU General Public License
+Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+*/
 function index(){
 	var self = this
 	self.page = 0
@@ -367,7 +373,7 @@ function index(){
 		$reset.hide()
 		self.$nav.fadeIn(spd)
 		if(self.page<5){
-			self.$nav.css('top',($('#page_'+self.page).height()+100))
+			self.$nav.css('top',($('#page_'+self.page).height()+90))
 		}
 		for(var i =1;i<5;i++){
 			if(i <= self.page){
