@@ -1,0 +1,5 @@
+{
+	"adobe_analytics": true,
+	"environment"  :"localhost",
+	"inline_locations" :  ["nhs.uk/oneyou/","assets.nhs.uk/","preview.antbits.com/content/NHS-Heartage_v4/index.php","preview.antbits.com/content/NHS-Heartage_v4/index.html","localhost","192.168.1.105"]
+}

@@ -1,339 +1,381 @@
 /*
 This file forms part of the NHS Choices Heart Age Tool.
-It is ©2014 NHS Choices.
+It is ©2020 NHS Choices.
 It is released under version 3 of the GNU General Public License
 Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+
+It contains code derived from https://github.com/BritCardSoc/JBS3Risk released by University of Cambridge.
+It also contains code derived from http://qrisk.org/lifetime/QRISK-lifetime-2011-opensource.v1.0.tgz released by ClinRisk Ltd.
 */
-function results(r){
-	var root = r
+var resultsObj = function(parent){
 	var self = this;
-	var rs = null
-	var ch_rs_low = {'heartage':95}
-	var ch_rs_high = {'heartage':0}
-	var bp_rs_low = {'heartage':95}
-	var bp_rs_high = {'heartage':0}
-	var eth_alt = [2,3,4,5,8]
-	var heart_age_low = 100
-	var heart_age_high = 0
-	var brackets = {'cholesterol':[1,8],'bp':[90,140]}
-	this.qriskLT = new Q65_lifetime();
-	this.counter_delay = root.speed*5.5
-	self.data = {'more':0,'exit':0,'links':[]}
-	var risk = 'low'
-	var $r1_content = $('#r1_content')
-	var $r1_title = $('#r1_title')
-	var $r1_heart_age = $('#r1_heart_age')
-	var $r2_content = $('#r2_content')
-	//var $social = $('#social')
-	var shared = {"fb":0,"tw":0,"gp":0,"em":0}
+	var calc_delay = 14 // sets result preload delay
+	var bmi_intervention // sets bmi intervention threshold, varies due to ethnicity
+	var brackets = {'cholesterol':[1,8],'bp':[90,140]};
+	var eth_alt = [2,3,4,5,8]; // ethnicities that have a lower bmi threshold
+	var ch_rs_low,ch_rs_high,bp_rs_low,bp_rs_high
+	var more = 0;
+	var ex = 0;
+	var text_bracket = 'text_over_40'
+	var skipped //tracks if user skipped entering cholesterol or blood pressure
 	var advice_obj = [
-		{'title':'Smoking','result_key':'Smoking','advice_status':'[qval]','text':'','key':null,'qval':'smoke_str','val':'obj.smoke_cat','info':false},
-		{'title':'Blood pressure','result_key':'BloodPressure','advice_status':'[qval]<div>[risk]</div>','text':'','key':'bp','qval':'obj.sbp','val':'obj.sbp','info':false},
-		{'title':'Cholesterol','result_key':'Cholesterol','advice_status':'Ratio [qval]<div>[risk]</div>','text':'','key':'c','qval':'ch_str','val':'obj.rati','info':false},
-		{'title':'Weight','result_key':'Weight','advice_status':'BMI [qval]<div>[risk]</div>','risk':0,'text':'','key':null,'qval':'obj.bmi_rounded','val':'obj.bmi','info':false}
-	]
-	var $advice_wrap = $('#advice_wrap')
-	this.logLink = function(evt){
-		var t = ''
-		if(evt.target.nodeName == 'IMG'){
-			t = evt.target.parentNode.href
-		}else{
-			t = evt.target.href
-		}
-		var mapObj = {'https://':'','http://':'','www.':'','nhs.uk':''};
-		self.data.links.push(replaceAll(t,mapObj))
-		self.data.links = arrayUnique(self.data.links)
-		self.data.exit = 1
+		{'title':'Smoking','result_key':'Smoking','advice_status':'[qval]','text':'','key':null,'qval':'self.form_data.smoke_str','val':'self.form_data.heartage_input.smoke_cat','info':false},
+		{'title':'Weight','result_key':'Weight','advice_status':'Your BMI is [qval] [risk] ','risk':0,'text':'','key':null,'qval':'self.form_data.heartage_input.bmi_rounded','val':'self.form_data.heartage_input.bmi','info':false},
+		{'title':'Your cholesterol','result_key':'Cholesterol','advice_status':'Ratio [qval] [risk] ','text':'','key':'c','qval':'self.form_data.ch_str','val':'self.form_data.heartage_input.rati','info':false},
+		{'title':'Your blood pressure','result_key':'BloodPressure','advice_status':'[qval] [risk] ','text':'','key':'bp','qval':'self.form_data.heartage_input.sbp','val':'self.form_data.heartage_input.sbp','info':false}
+	];
+	var $advice = $('#heartage-results-advice');
+	var links = [];
+	self.interventions = {};
+	self.parent = parent;
+	self.form_data = null;
+	self.ha = 0;
+	self.baseline = {
+		"age": 40,
+		"b_AF": false,
+		"b_ra": false,
+		"b_renal": false,
+		"b_treatedhyp": false,
+		"b_type2": false,
+		"bmi": 22.49,
+		"ethrisk": 1,
+		"fh_cvd": false,
+		"rati": 4.583333333333334,
+		"sbp": 130,
+		"smoke_cat": 0,
+		"town": -0.81
 	}
-	this.resizeLayout = function(){
-		if(root.page == 5){
-			var side_scroll = 'scroll'
-			if(root.qstr.layout == 'phone'){
-				var pad = 2;
-				var i_w = 177
-				var p_w = $('#page_5').width()-40
-				if(p_w >= (i_w*3)){
-					pad = (p_w -(i_w*3))/2
-					side_scroll = 'hidden'
-				}else{
-					side_scroll = 'scroll'
-					if((i_w*2) < p_w+20 && (i_w*2) > p_w-20){
-						pad = i_w/3
-					}
-				}
-				for(var i = 0 ;i < advice_obj.length;i++){
-					$('#infoDD_'+i).css('overflow-x',side_scroll)
-					$('#infoDD_'+i+'>:first-child').css('margin','0px '+pad+'px 0px 0px')
-					$('#infoDD_'+i+'>:last-child').css('margin','0px 0px 0px '+pad+'px')
-				}
-			}else{
-				$('#page_5 .info_item').css('margin','0px 1px 0px 1px')
-			}
-		}
-	
+	this.setEvents = function(){
+		$('#heartage-back-btn').on('click',function(e){
+			e.preventDefault();
+			self.parent.nav('form')
+		})
+		$('#heartage-restart-btn').on('click',function(e){
+			e.preventDefault();
+			self.parent.form.clear()
+			self.parent.nav('splash')
+		})
+		$('#heartage-results-footer img').attr('src',self.parent.path+'assets/bp-im2.jpg')
+		self.parent.initDetails('heartage-page-results')
+		$('#heartage-results-footer a').click(function(e){
+			e.preventDefault();
+			self.logLink(e.target.href)
+			self.parent.linkOut(e.target.href)
+		});
 	}
-	this.calc = function(obj,gender,skipped,smoke_str,ch_str){
-		$r1_heart_age.html(0)
-		ch_rs_low = {'heartage':95}
-		ch_rs_high = {'heartage':0}
-		bp_rs_low = {'heartage':95}
-		bp_rs_high = {'heartage':0}
-		delete this.qriskLT
-		this.qriskLT = new Q65_lifetime();
-		rs = self.qriskLT.lifetimeRisk(obj.age,gender,10,obj);
-		$r1_title.html('Your heart age is about')
-		$r1_content.html(root.text_data.TextAreas.r1_content)
-		var msg = '<p>'+root.text_data.TextAreas.life+'</p>'
-		msg+= '<div id = "life_bar"><div id = "life_bar_fill"><img src= "images/e81e26.png" alt="'+Math.floor(rs['life'])+' years life average expectancy"></div><div id = "life_bar_scale"><div id = "lf_40">40</div><div id = "lf_50">50</div><div id = "lf_60">60</div><div id = "lf_70">70</div><div id = "lf_80">80</div><div id = "lf_90">90</div><div id = "lf_100">100</div></div></div>'
-		msg+= root.text_data.TextAreas.r2_content
-		msg = msg.replace('[10_yr_risk]','<span class="emphasis">'+rs['10_yr_risk']+'%</span>').replace('[life]','<span class="emphasis">'+Math.floor(rs['life'])+'</span>')
-		if(rs['10_yr_risk'] < 10){
-			risk = 'low'
-		}else if(rs['10_yr_risk'] < 20){
-			risk = 'moderate'
-		}else{
-			risk = 'high'
+	this.generateResults = function(form_data){
+		self.parent.page = 5
+		self.form_data = form_data;
+		self.user_result = self.cloneObj(self.parent.heartage.getHeartage(self.form_data.heartage_input))
+		if(typeof _satellite != 'undefined' && self.parent.config.adobe_analytics && self.parent.config.adobe_state<2){
+			self.parent.config.adobe_state = 2
+			_satellite.track("tool_complete", {
+				toolName: self.parent.tool_name,
+				toolCategory: self.parent.tool_cat,
+				toolResult: 'heart age: '+self.user_result.result.heartage
+			})
 		}
-		
-		msg = msg.replace('[risk]',risk)
-		$r2_content.html(msg)
-		if(root.qstr.layout == 'phone'){
-			msg = '<div><img src = "images/heart.mob@2x.png" width = "40" alt="heart icon" height  = "53"></div>'
+		self.parent.analyticsObj.antbitsLog(true,0)
+	}
+	this.renderResults = function(rs){
+		// create interventions
+		self.interventions = {};
+		if($.inArray(self.form_data.heartage_input.ethrisk,eth_alt)>=0){
+			bmi_intervention = 23.5;
 		}else{
-			msg = '<div><img src = "images/heart@2x.png" width = "76" alt="heart icon" height  = "68"></div>'
+			bmi_intervention = 25;
+		};
+		$('#heartage-interventions>div').html('');
+		if(self.form_data.heartage_input.smoke_cat > 1){
+			self.createIntervention('smoke_cat','Quit smoking',1);
 		}
-		if(skipped != ''){
-			var ch_init = obj.rati
-			if(skipped.indexOf('c')>-1){
-				obj.rati = brackets.cholesterol[0]
-				ch_rs_low = self.qriskLT.lifetimeRisk(obj.age,gender,10,obj);
-				obj.rati = brackets.cholesterol[1]
-				ch_rs_high = self.qriskLT.lifetimeRisk(obj.age,gender,10,obj);
-				obj.rati = ch_init
-			}
-			var bp_init = obj.sbp
-			if(skipped.indexOf('bp')>-1){
-				obj.sbp = brackets.bp[0]
-				bp_rs_low = self.qriskLT.lifetimeRisk(obj.age,gender,10,obj);
-				obj.sbp = brackets.bp[1]
-				bp_rs_high = self.qriskLT.lifetimeRisk(obj.age,gender,10,obj);
-				obj.sbp = bp_init
-			}
-			heart_age_low = Math.min(bp_rs_low.heartage,ch_rs_low.heartage,rs.heartage)
-			heart_age_high = Math.max(bp_rs_high.heartage,ch_rs_high.heartage,rs.heartage)
-			msg+='<p>'+root.text_data.Results[skipped].text.replace('[heart_age_low]','<span class="emphasis">'+heart_age_low+'</span>').replace('[heart_age_high]','<span class="emphasis">'+heart_age_high+'</span>')+'</p>'
-			msg+='<strong>'+root.text_data.TextAreas.result_summary+'</strong>'
+		if(self.form_data.heartage_input.bmi > bmi_intervention){
+			self.createIntervention('bmi','Lose weight', bmi_intervention);
+		}
+		if(self.form_data.heartage_input.rati > 3.214){
+			self.createIntervention('rati','Lower cholesterol',3.214);
+		}
+		if(self.form_data.heartage_input.sbp > 119){
+			self.createIntervention('sbp','Reduce blood pressure',119);
+		}
+		if(Object.keys(self.interventions).length == 0){
+			$('#heartage-interventions').hide()
 		}else{
-			msg+= '<p>'
-			if(obj.age>rs.heartage){
-				msg+= root.text_data.Results.younger.text
-			}else if(Math.floor(obj.age)==rs.heartage){
-				msg+= root.text_data.Results.same.text
-			}else{
-				msg+= root.text_data.Results.older.text
-			}
-			msg+='</p><p><strong>'+root.text_data.TextAreas.result_summary+'</strong></p>'
+			$('#heartage-interventions').show()
 		}
-		
-		$('#r3').html(msg)
-		if(obj.age<40){
-			$('#r4').html('<h3>'+root.text_data.TextAreas.footer_title+'</h3>'+root.text_data.TextAreas.footer_under_40)
+		self.applyIntervention();	
+		self.renderAdvice();
+	}
+	this.renderAdvice = function(){
+		var preload_arr = [];
+		if(self.user_result.result.age<40){
+			text_bracket = 'text_under_40'
+			$('#heartage-results-footer>h3').html(self.parent.data.TextAreas.footer_title);
+			$('#heartage-results-footer>p').html(self.parent.data.TextAreas.footer_under_40);
 		}else{
-			$('#r4').html('<h3>'+root.text_data.TextAreas.footer_title+'</h3>'+root.text_data.TextAreas.footer_over_40)
-			if(root.qstr.layout == 'phone'){
-				var tmp = $('#footer_img').detach()
-				$('#r4').prepend(tmp)
-			}
+			text_bracket = 'text_over_40'
+			$('#heartage-results-footer>h3').html(self.parent.data.TextAreas.footer_title);
+			$('#heartage-results-footer>p').html(self.parent.data.TextAreas.footer_over_40);
 		}
-		$advice_wrap.html('')
-		
+		$advice.html('');
 		for(var i in advice_obj){
-			if(!(advice_obj[i].title == 'Smoking' && obj.smoke_cat == 0)){
-				var result_obj = root.text_data[advice_obj[i].result_key]
-				var val = eval(advice_obj[i].val)
+			if(!(advice_obj[i].result_key == 'Smoking' && self.form_data.heartage_input.smoke_cat == 0)){// non smokers get no smoking advice
+				var result_obj = self.parent.data[advice_obj[i].result_key];
+				var val = eval(advice_obj[i].val);
+				var result_obj = self.parent.data[advice_obj[i].result_key];
+				var tc
 				if(skipped.indexOf(advice_obj[i].key)>-1){
 					val = 10000;
 				}
-				var result_set = null
-				var rso = result_obj
+				var result_set = null;
+				var rso = result_obj;
 				// if BMI check ethnicity and select correct params
-				if(advice_obj[i].title == 'Weight'){
-					if($.inArray(obj.ethrisk,eth_alt)>=0){
-						rso = result_obj.slice(5,9)
+				if(advice_obj[i].result_key == 'Weight'){
+					if($.inArray(self.form_data.heartage_input.ethrisk,eth_alt)>=0){
+						rso = result_obj.slice(4,8);
 					}else{
-						rso = result_obj.slice(0,4)
+						rso = result_obj.slice(0,4);
 					}
 				}
-				//
-				if(advice_obj[i].title == 'Cholesterol'){
-					var tc = obj.tc;
-				}
+				if(advice_obj[i].result_key == 'Cholesterol'){
+					tc = self.form_data.heartage_input.tc;
+				};
 				for(var j in rso){
-					result_set = rso[j]
+					result_set = rso[j];
 					if(eval(val+' '+rso[j].bracket)){
-						break
-					}
+						break;
+					};
+				};
+				var msg = result_set[text_bracket]
+				if(val == 10000 && advice_obj[i].result_key == 'Cholesterol'){
+					msg = result_set[text_bracket].replace('[ch_low]','<strong>'+ch_rs_low.result.heartage+'</strong>');
+					msg = msg.replace('[ch_high]','<strong>'+ch_rs_high.result.heartage+'</strong>');
 				}
-				var msg = result_set.text
-				if(val == 10000 && advice_obj[i].title == 'Cholesterol'){
-					msg = result_set.text.replace('[ch_low]','<strong>'+ch_rs_low.heartage+'</strong>')
-					msg = msg.replace('[ch_high]','<strong>'+ch_rs_high.heartage+'</strong>')
+				if(val == 10000 && advice_obj[i].result_key == 'BloodPressure'){
+					msg = result_set[text_bracket].replace('[bp_low]','<strong>'+bp_rs_low.result.heartage+'</strong>');
+					msg = msg.replace('[bp_high]','<strong>'+bp_rs_high.result.heartage+'</strong>');
 				}
-				if(val == 10000 && advice_obj[i].title == 'Blood pressure'){
-					msg = result_set.text.replace('[bp_low]','<strong>'+bp_rs_low.heartage+'</strong>')
-					msg = msg.replace('[bp_high]','<strong>'+bp_rs_high.heartage+'</strong>')
+				if(advice_obj[i].result_key == 'BloodPressure'){
+					msg = msg.replace('[bp]',self.form_data.heartage_input.sbp);
 				}
-				if(advice_obj[i].title == 'Blood pressure'){
-					msg = msg.replace('[bp]',obj.sbp)
-				}
-				var output = '<div class = "advice_row">'
-				output += '<img src = "images/'+advice_obj[i].title.replace(' ','')+root.img_str+'.png" alt = "'+advice_obj[i].title+' icon" width="52"  height ="52">'
-				output += '<h3>'+advice_obj[i].title+'</h3>'
+				var output = '<div class = "heartage-panel-light heartage-advice-row">';
+				output += '<h3>'+advice_obj[i].title+'</h3>';
 				if(skipped.indexOf(advice_obj[i].key)>-1){
-					output += '<div class="advice_status" style = "color:#e81e26;">Not known - GET TESTED</div>'
+					if(self.form_data.heartage_input.age<40){
+						output += '<div class="heartage-advice-status-unknown">'+self.parent.data.TextAreas.not_known_under_40+'</div>';
+					}else{
+						output += '<div class="heartage-advice-status-unknown">'+self.parent.data.TextAreas.not_known+'</div>';
+					}
+					
 				}else{
-					var status_str = advice_obj[i].advice_status
-					status_str = status_str.replace('[qval]',eval(advice_obj[i].qval)).replace('[risk]',result_set.type)
-					output += '<div class="advice_status">'+status_str+'</div>'
+					var status_str = advice_obj[i].advice_status;
+					status_str = status_str.replace('[qval]',eval(advice_obj[i].qval)).replace('[risk]',result_set.type);
+					if(advice_obj[i].result_key == 'Smoking'){
+						status_str = 'You '+status_str.slice(1);
+					}
+					if(advice_obj[i].result_key == 'Cholesterol'){
+						if(j != 1 || tc >=5){	
+							status_str = 'Total: '+tc+' '+result_set.type;	
+						}
+					}
+					output += '<div class="heartage-advice-status">'+status_str+'</div>';
 				}
-				output+='<p>'+msg+'</p>'
-				output += '</div>'
-				
-				output += '<a href = "javascript:;" id = "infoDB_'+i+'"><div class="advice_action_bar"><img src = "images/whiteArrow@2x.png" width = "12" height = "12"><h2>'+result_set.contenttitle+'</h2></div></a>'
-				output += '<div id = "infoDD_'+i+'" class = "info_drop_down">'
+				output+='<p>'+msg+'</p><div class = "heartage-info-panel"><h3>'+result_set.contenttitle+'</h3>';
 				var items = result_set.resource.split(',')
 				for(var j in items){
-					var rObj = root.text_data.Resources[items[j]]
-					output+= '<div class = "info_item">'
-					if(rObj.image != ''){
-						output+= '<a href = "'+rObj.url+'" tabindex = "-1" target="_blank"><img border = "0" alt="'+rObj.imagealt+'" src = "'+root.asset_dir+'/'+rObj.image+'"></a>'
-					}else{
-						output+= '<a href = "javascript:;" tabindex = "-1" ><img border = "0" src = "resources/placeholder.png"></a>'
-					}
-					output+= '<p>'+rObj.description+'</p></div>'
+					var rObj = self.parent.data.Resources[items[j]];
+					output+= '<div class = "heartage-info-item">';
+					output+= '<div class = "heartage-col-left"><img border = "0" aria-hidden="true" alt="'+rObj.image_alt+'" src = "'+self.parent.path+'assets/'+rObj.image+'"/></div>';
+					//output+= '<div class = "heartage-col-right"><a href = "'+rObj.url+'" target="_blank">'+rObj.description+'</a></div></div>'
+					output+= '<div class = "heartage-col-right">'+rObj.description.replace('<a','<a href = "'+rObj.url+'" target="_blank"')+'</div></div>'
+					
 				}
-				output += '</div>'
-				$advice_wrap.append(output)
-				$('#infoDB_'+i).on('click',function(e){
-					self.toggleInfo(e)
-				})
-				$('#infoDB_'+i).on('mouseover',function(e){
-					self.infoTint(e,1)
-				})
-				$('#infoDB_'+i).on('mouseout',function(e){
-					self.infoTint(e,0)
-				})
-				$('#infoDB_'+i).on('focusin',function(e){
-					self.infoTint(e,1)
-				})
-				$('#infoDB_'+i).on('focusout',function(e){
-					self.infoTint(e,0)
-				})
-				
+				output += '</div></div></div></div>';
+				$advice.append(output);
+				$('#infoDB_'+i).css('background-image','none');
 			}
 		}
-		$('.info_drop_down a').on('click',function(e){
-			self.logLink(e)
-		})
-		$('#r4 a').on('click',function(e){
-			self.logLink(e)
-		})
-		root.trackHeight()
-		setTimeout(function(){
-			self.counter(0,rs.heartage)
-			var life = (1.66666*(Math.max(Math.min(Math.floor(rs['life'])-40,60),0)))
-			$('#life_bar_fill').animate({'width':life+'%'},1500,'easeOutQuad')
-		},self.counter_delay)
-		self.resizeLayout()
-		delete rs,ch_rs_low,ch_rs_high,bp_rs_low,bp_rs_high
+		$('#heartage-results-advice a').click(function(e){
+			e.preventDefault();
+			self.logLink(e.target.href)
+			self.parent.linkOut(e.target.href)
+		});
 	}
-	this.infoTint = function(e,opt){
-		var id= e.target.parentNode.id.split('_')[1]
-		if(e.target.tagName != 'DIV' ){
-			id= e.target.parentNode.parentNode.id.split('_')[1]
+	this.toggleIntervention = function(key){
+		
+		if(key.length >0){
+			if(self.interventions[key].state){
+				self.interventions[key].state = false
+			}else{
+				self.interventions[key].state = true
+			}
 		}
-		if(e.target.tagName == 'A' ){
-			id= e.target.id.split('_')[1]
-		}
-		if(opt == 1){
-			$('#infoDB_'+id+' div').css('background-color','#146bba')
+		self.applyIntervention();
+		self.parent.scrollEvent($('#tool_heart-age').position().top)
+	}
+	this.applyIntervention = function(){
+		var msg = ''
+		ch_rs_low = {'result':{'heartage':95}};
+		ch_rs_high = {'result':{'heartage':0}};
+		bp_rs_low = {'result':{'heartage':95}};
+		bp_rs_high = {'result':{'heartage':0}};
+		$('#heartage-masthead>span>h2').html('Your heart age is <span role="text">about</span>');
+		var prefix = 'is';
+		var input = self.cloneObj(self.form_data.heartage_input);
+		for(var i in self.interventions){
+			if(self.interventions[i].state == true){
+				input[i] = self.interventions[i].val;
+				prefix = 'could be';
+				$('#heartage-masthead>span>h2').html('Your heart age could be <span role="text">about</span>');
+			}
+		};
+		var rs = self.cloneObj(self.parent.heartage.getHeartage(input));
+		msg+= self.parent.data.Results.risk[text_bracket].replace('[10_yr_risk]',rs.result['10_yr_risk']).replace('[prefix]',prefix);
+		skipped = ''
+		var bracket_input = self.cloneObj(input)
+		if(!self.form_data.ch_skipped && !self.form_data.bp_skipped){
+			msg+= '<p>';
+			if(self.form_data.heartage_input.age>rs.result.heartage){
+				msg+= self.parent.data.Results.younger[text_bracket];
+			}else if(Math.floor(self.form_data.heartage_input.age)==rs.result.heartage){
+				msg+= self.parent.data.Results.same[text_bracket];
+			}else{
+				msg+= self.parent.data.Results.older[text_bracket];
+			};
+			msg+='</p>';
 		}else{
-			$('#infoDB_'+id+' div').css('background-color','#1885e7')
+			if(self.form_data.ch_skipped){
+				skipped+='c'
+				input.rati = brackets.cholesterol[0];
+				ch_rs_low = self.cloneObj(self.parent.heartage.getHeartage(input));
+				input.rati = brackets.cholesterol[1];
+				ch_rs_high =  self.cloneObj(self.parent.heartage.getHeartage(input));
+				input.rati = self.baseline.rati;
+			}
+			if(self.form_data.bp_skipped){
+				skipped+='bp'
+				input.sbp = brackets.bp[0];
+				bp_rs_low = self.cloneObj(self.parent.heartage.getHeartage(input));
+				input.sbp = brackets.bp[1];
+				bp_rs_high = self.cloneObj(self.parent.heartage.getHeartage(input));
+				input.sbp = self.baseline.sbp;
+			}
+		}
+		if(skipped != ''){
+			var str = self.parent.data.Results[skipped][text_bracket];
+			switch(skipped){
+				case "cbp":
+					str = str.replace('[heart_age_low]',Math.min(bp_rs_low.result.heartage,ch_rs_low.result.heartage));
+					str = str.replace('[heart_age_high]',Math.max(bp_rs_high.result.heartage,ch_rs_high.result.heartage));
+				break;
+				case "bp":
+					str = str.replace('[heart_age_low]',bp_rs_low.result.heartage);
+					str = str.replace('[heart_age_high]',bp_rs_high.result.heartage);
+				break;
+				case "c":
+					str = str.replace('[heart_age_low]',ch_rs_low.result.heartage);
+					str = str.replace('[heart_age_high]',ch_rs_high.result.heartage);
+				break;
+			}
+			msg+= str;
+		}
+		$('#heartage-life-expectancy').html(Math.floor(rs.result.life))
+		$('#heartage-about-your-calculation').html(msg)
+		self.counter(0,rs.result.heartage,$('#heartage-number'),$('#heartage-animated-number'))
+	}
+	this.createIntervention = function(key,title,val){
+		self.interventions[key] = {'val':val,'title':title,'state':false};
+		var info = self.parent.data.TextAreas['intervention_'+key]
+		if(key == 'bmi'){
+			info = info.replace('[OVERWEIGHT]', bmi_intervention-0.1)
+		}
+		var $node = $('<div class = "heartage-intervention"><label class="heartage-slider"><input  aria-label = "See how your heart age changes if you '+title+'" id="heartage-intervention-'+key+'" type = "checkbox"><span class="heartage-slider_toggle"></span><div><h3>'+title+'</h3><p>'+info+'</p></div></label></div>')
+		$('#heartage-interventions>div').append($node)
+		$node.find('input').on('click',function(e){
+			var $target = $(e.target)
+			self.toggleIntervention($target[0].id.split('-').pop())
+		})
+		function swipe(e,direction){
+			var $target = $(e.target)
+			var key = $target[0].id.split('-').pop()
+			if(key.length > 0){
+				if(direction == 'left' && self.interventions[key].state){
+					self.toggleIntervention(key)
+				}
+				if(direction == 'right' && !self.interventions[key].state){
+					self.toggleIntervention(key)
+				}
+			}
+		}
+		if(self.parent.isMobile.any()){
+			var slider = new Hammer(document.getElementById('heartage-intervention-'+key));
+			slider.on('swipeleft', function(e) {
+				swipe(e,'left')
+			});
+			slider.on('swiperight', function(e) {
+				swipe(e,'right')
+			});
 		}
 	}
-	this.counter = function(start,num){
-		self.counter_delay = root.speed*5.5
-		var inc = 20
-		var count = start
-		var t= 0
+	this.preload = function(form_data){
+		self.generateResults(form_data);
+		self.parent.scrollEvent($('#tool_heart-age').position().top)
+		var $preloader = $('<div id="heartage-preloader"><div></div><h2>Generating results</h2></div>')
+		self.parent.$target.append($preloader)
+		$preloader.fadeOut(0).fadeIn(self.parent.speed).delay(self.parent.speed*calc_delay).fadeOut(self.parent.speed);
+		setTimeout(function(){
+			self.renderResults();
+			self.parent.nav('results')
+		},self.parent.speed*calc_delay)
+	}
+	this.cloneObj = function(obj){
+		return jQuery.parseJSON(JSON.stringify(obj));
+	}
+	this.counter = function(start,num,$target,$animated_target){
+		$target.html(num);
+		$animated_target.html(num);
+		self.counter_delay = self.parent.speed*5.5;
+		var inc = 20;
+		var count = start;
+		var t= 0;
 		function stepNext(){
 			setTimeout(function(){
 			if(count <= num){
-				$r1_heart_age.html(count)
-				count++
+				$animated_target.html(count);
+				count++;
 				if(count > num - 15){
-					inc*=1.08
+					inc*=1.08;
 				}
-				
-				stepNext()
+				stepNext();
 			}
-			},inc)
+			},inc);
 		}
-		stepNext()
+		stepNext();
 	}
-	this.tidyUp = function(){
-		for(var i in advice_obj){
-			$('#infoDB_'+i).off('click')
-		}
+	this.logLink = function(t){
+		// logs visited links for analytics
+		var mapObj = {'https://':'','http://':'','www.':'','nhs.uk':''};
+		links.push(self.parent.replaceAll(t,mapObj));
+		links = self.parent.arrayUnique(links);
+		ex = 1;
+		more = 1
 	}
 	this.getData = function(obj){
-		if(rs != null){
-			obj.lf = rs.life.toFixed(2)
-			obj.h = rs.heartage
-			obj.links = self.data.links.join('|')
-			obj.more = self.data.more
-			obj.exit = self.data.exit
+		if(typeof self.user_result != 'undefined'){
+			obj.bmi = self.user_result.user_data.bmi.toFixed(1);
+			obj.age = self.user_result.user_data.age;
+			obj.gen = self.user_result.user_data.gender;
+			obj.af = self.user_result.user_data.b_AF ? 1 : 0;
+			obj.art = self.user_result.user_data.b_ra ? 1 : 0;
+			obj.kid = self.user_result.user_data.b_renal ? 1 : 0;
+			obj.btp = self.user_result.user_data.b_treatedhyp ? 1 : 0;
+			obj.dia = self.user_result.user_data.b_type2 ? 1 : 0;
+			obj.lf = self.user_result.result.life.toFixed(1)
+			obj.h = self.user_result.result.heartage
+			obj.links = links.join('|');
+			obj.more = more;
+			obj.ex = ex;
 		}
-		return obj
-	}
-	this.toggleInfo = function(e){
-		self.data.more=1
-		var id= e.target.parentNode.id.split('_')[1]
-		
-		if(e.target.tagName != 'DIV' ){
-			id= e.target.parentNode.parentNode.id.split('_')[1]
-		}
-		if(e.target.tagName == 'A' ){
-			id= e.target.id.split('_')[1]
-		}
-		var pad = 22
-		if(root.qstr.layout == 'phone'){
-			pad = 32
-			$('#infoDB_'+id+' div').css('background-color','#146bba')
-		}
-		if(advice_obj[id].info){
-			$('#infoDD_'+id).animate({opacity:0,height:0},root.spd,function(){
-				$('#infoDD_'+id+' a').attr('tabindex',-1)
-				$('#infoDD_'+id).css('display','none')
-				
-			})
-			setTimeout(function(){
-				$('#infoDB_'+id+' div').css('background-color','#1885e7')
-			},100)
-			$('#infoDB_'+id+' img').attr('src','images/whiteArrow@2x.png')
-			advice_obj[id].info = false
-		}else{
-			
-			$('#infoDD_'+id+' a').attr('tabindex',null)
-			$('#infoDD_'+id).show().animate({opacity:1,height:($('#infoDD_'+id+'>div').height()+pad)},root.spd,function(){
-				self.resizeLayout()
-			})
-			setTimeout(function(){
-				$('#infoDB_'+id+' div').css('background-color','#1885e7')
-			},100)
-			$('#infoDB_'+id+' img').attr('src','images/whiteArrowDn@2x.png')
-			advice_obj[id].info = true
-		}
-		root.trackHeight()
+		return obj;
 	}
 }

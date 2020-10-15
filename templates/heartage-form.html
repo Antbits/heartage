@@ -1,0 +1,468 @@
+<h2>How healthy is your heart?</h2>
+<div class="heartage-panel-light" id = "heartage-formpanel-dob">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset" aria-describedby="heartage-dob-hint" role="group">
+      <legend class="nhsuk-fieldset__legend nhsuk-label--l">
+      <h3 class="nhsuk-fieldset__heading">Date of birth</h3>
+      </legend>
+      <span class="nhsuk-hint" id="heartage-dob-hint">For example, 15 3 1980</span>
+      <div class="nhsuk-date-input" id="heartage-dob">
+        <div class="nhsuk-date-input__item">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label nhsuk-date-input__label" for="heartage-dob-day">Day</label>
+            <input class="nhsuk-input nhsuk-date-input__input nhsuk-input--width-3" id="heartage-dob-day" type="number" min="1" max="31" pattern="[0-9]*"  name="heartage-dob-day" >
+          </div>
+        </div>
+        <div class="nhsuk-date-input__item">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label nhsuk-date-input__label" for="heartage-dob-month">Month</label>
+            <input class="nhsuk-input nhsuk-date-input__input nhsuk-input--width-3" id="heartage-dob-month" type="number" min = "1" max="12" pattern="[0-9]*" name="heartage-dob-month" >
+          </div>
+        </div>
+        <div class="nhsuk-date-input__item">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label nhsuk-date-input__label" for="heartage-dob-year">Year</label>
+            <input class="nhsuk-input nhsuk-date-input__input nhsuk-input--width-4" id="heartage-dob-year" type="number" pattern="[0-9]*" name="heartage-dob-year" >
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-sex">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Sex</h3>
+      <p>
+       {{gender_explanation}}
+      </p>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-sex-1" name="heartage-sex" type="radio" value="1">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-sex-1">Male</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-sex-2" name="heartage-sex" type="radio" value="0">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-sex-2">Female</label></div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-eth">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Ethnic group (optional)</h3>
+      <p>
+       {{ethnicity_explanation}}
+      </p>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-2" name="heartage-eth" type="radio" value="1">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-2">White</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-3" name="heartage-eth" type="radio" value="2">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-3">Indian</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-4" name="heartage-eth" type="radio" value="3">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-4">Pakistani</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-5" name="heartage-eth" type="radio" value="4">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-5">Bangladeshi</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-6" name="heartage-eth" type="radio" value="6">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-6">Black Caribbean</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-7" name="heartage-eth" type="radio" value="7">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-7">Black African</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-8" name="heartage-eth" type="radio" value="8">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-8">Chinese</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-9" name="heartage-eth" type="radio" value="5">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-9">Other Asian</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-10" name="heartage-eth" type="radio" value="9">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-10">Other ethnic group</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-eth-11" name="heartage-eth" type="radio" value="9">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-eth-11">Mixed ethnicity</label>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-postcode">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Postcode (optional)</h3>
+      <details>
+        <summary><span> Why is this important?</span></summary>
+        <div><div>{{postcode_explanation}}</div></div>
+      </details>
+      <span class="nhsuk-hint" id="heartage-postcode-hint">Eg LS1 6AE</span>
+      </legend>
+      <input class="nhsuk-input nhsuk-date-input__input nhsuk-input--width-8" id="heartage-postcode" autocomplete = "postal-code" name="heartage-postcode" type="text">
+      <label class="nhsuk-label heartage-hidden" for="heartage-postcode">Postcode (optional)</label>
+    </fieldset>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-cvd">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you have cardiovascular disease?</h3>
+      <details>
+        <summary><span> What is cardiovascular disease?</span></summary>
+        <div><div>{{cvd_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cvd-1" name="heartage-cvd" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cvd-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cvd-2" name="heartage-cvd" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cvd-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-cvd-warning" class="heartage-warning">{{cvd_warning}}</div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-smoke">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you smoke?</h3>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-smoke-0" name="heartage-smoke" type="radio" value="0">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-smoke-0">No</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-smoke-1" name="heartage-smoke" type="radio" value="1">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-smoke-1">I quit</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-smoke-2" name="heartage-smoke" type="radio" value="2">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-smoke-2">I smoke less than 10 a day</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-smoke-3" name="heartage-smoke" type="radio" value="3">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-smoke-3">I smoke less than 20 a day</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-smoke-4" name="heartage-smoke" type="radio" value="4">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-smoke-4">I smoke 20+ a day</label>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-height">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset" role="group">
+      <legend class="nhsuk-fieldset__legend nhsuk-label--l">
+      <h3 class="nhsuk-fieldset__heading">Height</h3>
+      </legend>
+      <div class="nhsuk-hw-input" id="heartage-height">
+        <div class="nhsuk-hw-input__item heartage-imperial">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-height-feet">Feet</label>
+            <input class="nhsuk-input nhsuk-input--width-4" id="heartage-height-feet" name="heartage-height-feet" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+        <div class="nhsuk-hw-input__item heartage-imperial">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-height-inches">Inches</label>
+            <input class="nhsuk-input nhsuk-input--width-4" id="heartage-height-inches" name="heartage-height-inches" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+        <div class="nhsuk-hw-input__item heartage-metric">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label " for="heartage-height-cm">Centimetres</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-height-cm" name="heartage-height-cm" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <div class="heartage-unit-toggle"><a href="javascript:;">Switch to metric</a><a href="javascript:;">Switch to imperial</a></div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-weight">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset" role="group">
+      <legend class="nhsuk-fieldset__legend nhsuk-label--l">
+      <h3 class="nhsuk-fieldset__heading">Weight</h3>
+      </legend>
+      <div class="nhsuk-hw-input" id="heartage-weight">
+        <div class="nhsuk-hw-input__item heartage-imperial">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-weight-stone">Stone</label>
+            <input class="nhsuk-input nhsuk-input--width-4" id="heartage-weight-stone" name="heartage-weight-stone" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+        <div class="nhsuk-hw-input__item heartage-imperial">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-weight-pounds">Pounds</label>
+            <input class="nhsuk-input nhsuk-input--width-4" id="heartage-weight-pounds" name="heartage-weight-pounds" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+        <div class="nhsuk-hw-input__item heartage-metric">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label " for="heartage-weight-kg">Kilograms</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-weight-kg" name="heartage-weight-kg" type="number" pattern="[0-9]*">
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <div class="heartage-unit-toggle"><a href="javascript:;">Switch to metric</a><a href="javascript:;">Switch to imperial</a></div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-diabetes">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you have diabetes?</h3>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-diabetes-1" name="heartage-diabetes" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-diabetes-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-diabetes-2" name="heartage-diabetes" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-diabetes-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-diabetes-warning" class="heartage-warning">{{conditions_warning}}</div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-arthritis">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you have rheumatoid arthritis?</h3>
+      <details>
+        <summary><span> What is rheumatoid arthritis?</span></summary>
+        <div><div>{{arthritis_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-arthritis-1" name="heartage-arthritis" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-arthritis-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-arthritis-2" name="heartage-arthritis" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-arthritis-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-arthritis-warning" class="heartage-warning">{{conditions_warning}}</div>
+  </div>
+</div>
+
+
+
+<div class="heartage-panel-light" id = "heartage-formpanel-ckd">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you have chronic kidney disease?</h3>
+      <details>
+        <summary><span> What is chronic kidney disease?</span></summary>
+        <div><div>{{ckd_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-ckd-1" name="heartage-ckd" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-ckd-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-ckd-2" name="heartage-ckd" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-ckd-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-ckd-warning" class="heartage-warning">{{conditions_warning}}</div>
+  </div>
+</div>
+
+
+<div class="heartage-panel-light" id = "heartage-formpanel-atrfib">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you have atrial fibrillation?</h3>
+      <details>
+        <summary><span> What is atrial fibrillation?</span></summary>
+       <div><div>{{atrfib_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-atrfib-1" name="heartage-atrfib" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-atrfib-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-atrfib-2" name="heartage-atrfib" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-atrfib-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-atrfib-warning" class="heartage-warning">{{conditions_warning}}</div>
+  </div>
+</div>
+
+
+
+<div class="heartage-panel-light" id = "heartage-formpanel-cvdfam">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Has a close relative (mother, father, sister or brother) under 60 been told they have a cardiovascular disease?</h3>
+      <details>
+        <summary><span> What is cardiovascular disease?</span></summary>
+        <div><div>{{cvdfam_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cvdfam-1" name="heartage-cvdfam" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cvdfam-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cvdfam-2" name="heartage-cvdfam" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cvdfam-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-cvdfam-warning" class="heartage-warning">{{cvdfam_warning}}</div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-cholesterol">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you know your cholesterol?</h3>
+      <details>
+        <summary><span>What cholesterol information is needed?</span></summary>
+        <div><div>{{cholesterol_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cholesterol-1" name="heartage-cholesterol" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cholesterol-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-cholesterol-2" name="heartage-cholesterol" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-cholesterol-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-cholesterol-input-panel" class="heartage-input-panel">
+      <div class="nhsuk-panel-input" >
+        <div class="nhsuk-panel-input__item heartage-mmol">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-total_cholesterol-mmol">Total cholesterol</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-total_cholesterol-mmol" name="heartage-hdl_cholesterol-mmol" type="number">
+            <label class="nhsuk-label" for="heartage-hdl_cholesterol-mmol">HDL cholesterol</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-hdl_cholesterol-mmol" name="heartage-hdl_cholesterol-mmol" type="number" >
+            <p>mmol/L</p>
+          </div>
+        </div>
+        <div class="nhsuk-panel-input__item heartage-mgdl">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-total_cholesterol-mgdl">Total cholesterol</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-total_cholesterol-mgdl" name="heartage-hdl_cholesterol-mgdl" type="number" step="1" pattern="[0-9]*">
+            <label class="nhsuk-label" for="heartage-hdl_cholesterol-mgdl">HDL cholesterol</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-hdl_cholesterol-mgdl" name="heartage-hdl_cholesterol-mgdl" type="number" step="1" pattern="[0-9]*">
+            <p>mg/dl</p>
+          </div>
+        </div>
+        <div class="heartage-unit-toggle"><a href="javascript:;">Switch to mg/dl</a><a href="javascript:;">Switch to mmol/L</a></div>
+      </div>
+      <div id="heartage-cholesterol-advice" class="heartage-warning" style="height: auto;">{{cholesterol_advice}}</div>
+    </div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-bp">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Do you know your blood pressure?</h3>
+      <details>
+        <summary><span>What blood pressure information is needed?</span></summary>
+        <div><div>{{bp_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-bp-1" name="heartage-bp" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-bp-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-bp-2" name="heartage-bp" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-bp-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <div id = "heartage-bp-input-panel" class="heartage-input-panel">
+      <div class="nhsuk-panel-input" >
+        <div class="nhsuk-panel-input__item heartage-bp-mmhg">
+          <div class="nhsuk-form-group">
+            <label class="nhsuk-label" for="heartage-total-bp-mmhg">Systolic blood pressure</label>
+            <input class="nhsuk-input nhsuk-input--width-5" id="heartage-bp-mmhg" name="heartage-bp-mmhg" type="number" pattern="[0-9]*">
+            <p>mmHg</p>
+          </div>
+        </div>
+      </div>
+      <div id="heartage-bp-advice" class="heartage-warning" style="height: auto;">{{bp_advice}}</div>
+    </div>
+  </div>
+</div>
+<div class="heartage-panel-light" id = "heartage-formpanel-bpt">
+  <div class="nhsuk-form-group">
+    <fieldset class="nhsuk-fieldset">
+      <legend class="nhsuk-fieldset__legend nhsuk-fieldset__legend--l">
+      <h3 class="nhsuk-fieldset__heading">Have you ever received blood pressure treatment?</h3>
+      <details>
+        <summary><span> Blood pressure treatment</span></summary>
+        <div><div>{{bpt_explanation}}</div></div>
+      </details>
+      </legend>
+      <div class="nhsuk-radios">
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-bpt-1" name="heartage-bpt" type="radio" value="true">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-bpt-1">Yes</label>
+        </div>
+        <div class="nhsuk-radios__item">
+          <input class="nhsuk-radios__input" id="heartage-bpt-2" name="heartage-bpt" type="radio" value="false">
+          <label class="nhsuk-label nhsuk-radios__label" for="heartage-bpt-2">No</label>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+
+<button class="heartage-button" id = "heartage-calculate-btn" type="submit">Get your results</button>

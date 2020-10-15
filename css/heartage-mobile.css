@@ -1,0 +1,8 @@
+a, select, input, summary, details, label{
+	-webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+}
+#tool_heart-age summary:hover,#tool_heart-age a:focus, #tool_heart-age a:hover{
+	color:#C8005D;
+	background-color:transparent;
+	box-shadow:none;
+}

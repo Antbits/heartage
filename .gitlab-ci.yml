@@ -1,0 +1,26 @@
+---
+stages:
+  - deploy
+
+image: azuresdk/azure-cli-python
+
+services:
+- docker:dind
+
+deploy-prod:
+  stage: deploy
+  script:
+    - az login --service-principal -u ${AZURE_SERVICE_PRINCIPAL} -p ${AZURE_SERVICE_PRINCIPAL_PW} --tenant ${AZURE_TENANT}
+    - cd /builds/${CI_PROJECT_NAMESPACE}
+    - find ${CI_PROJECT_NAME}/ -not -regex .*\.git.* -type f -exec az storage blob upload -f {} -c tools -n {} --account-name ${AZURE_STORAGE_ACCOUNT} --account-key ${AZURE_STORAGE_ACCOUNT_KEY} --validate-content \;
+  only:
+    - master
+
+deploy-staging:
+  stage: deploy
+  script:
+    - az login --service-principal -u ${AZURE_SERVICE_PRINCIPAL} -p ${AZURE_SERVICE_PRINCIPAL_PW} --tenant ${AZURE_TENANT}
+    - cd /builds/${CI_PROJECT_NAMESPACE}
+    - find ${CI_PROJECT_NAME}/ -not -regex .*\.git.* -type f -exec az storage blob upload -f {} -c tools -n {} --account-name ${STAGING_AZURE_STORAGE_ACCOUNT} --account-key ${STAGING_AZURE_STORAGE_ACCOUNT_KEY} --validate-content \;
+  except:
+    - master

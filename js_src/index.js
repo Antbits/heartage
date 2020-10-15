@@ -1,483 +1,363 @@
 /*
 This file forms part of the NHS Choices Heart Age Tool.
-It is ©2014 NHS Choices.
+It is ©2020 NHS Choices.
 It is released under version 3 of the GNU General Public License
 Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+
+It contains code derived from https://github.com/BritCardSoc/JBS3Risk released by University of Cambridge.
+It also contains code derived from http://qrisk.org/lifetime/QRISK-lifetime-2011-opensource.v1.0.tgz released by ClinRisk Ltd.
 */
-function index(){
-	var self = this
+var heartageIndex = function(path,$target,config,nocache){
+	var self = this;
 	self.page = 0
-	self.analytics_page = 0
-	self.$nav = $('#nav')
-	self.$dots = $('#dots')
-	self.$header = $('#header')
-	self.$mob_header = $('#mob_header')
-	self.responsive = false
-	self.w = '600px'
-	var $next = $('#next')
-	var $reset = $('#reset')
-	var $back = $('#back')
-	var $more_info_content = $('#more_info_content')
-	var json_url = 'heartage.js'
-	var transition = false
-	var redirect_str = '/tools/documents/heartage/index.html';
-	self.speed = 600
-	self.retina = window.devicePixelRatio > 1;
-	self.asset_dir = 'assets/'
-	self.text_data = null
-	var $main = $('#main')
-	var $dialog_outer = $('#dialog_outer')
-	var $dialog_inner = $('#dialog_inner')
-	var $dialog_content = $('#dialog_content')
-	var $result_loader = $('#result_loader')
-	var locked = false
-	self.device = 'desktop'
-	self.layout = 'desktop'
-	self.qstr = getUrlVars();
-	self.img_str = ''
-	var $pages = new Array($('#page_0'),$('#page_1'),$('#page_2'),$('#page_3'),$('#page_4'),$('#page_5'))
-	$('#page_loader>div').css('background-color','#e81e26')
-	if(self.qstr.hasOwnProperty('syn_id')){
-		self.syn_id = self.qstr.syn_id
-		self.syndicate = true
-		redirect_str = '//https://media.nhschoices.nhs.uk/tools/documents/heartage/index.html';
-		$('#splash_main>h1').before('<a href="//www.nhs.uk/Tools/Pages/heartage.aspx" target = "_new" id="syn_header"><img src = "images/choices-logo@2x.png" height="50" width="222" border="0"></a>')
+	self.$target = $target;
+	self.config = config;
+	self.loaded = 0;
+	self.speed = 300;
+	self.size = 16
+	self.postmessage = false
+	self.syn_id = 'nhs'
+	self.msg_obj = {"id":"heartage","data":{},"action":"init"}
+	self.width = $(window).width();
+	self.keynav = false;
+	self.framed = false;
+	self.path = path;
+	self.page_names = ['splash','form','results'];
+	self.page_divs = [];
+	self.urlvars = getUrlVars();
+	self.townsend_api_path = '//preview.antbits.com/townsend/api.php';
+	self.edge = window.navigator.userAgent.indexOf("Edge") > -1
+	var locked,h,s,poller
+	var page_title = $('title').html()
+	self.config.tool_name = 'One You Heart Age'
+	self.config.tool_category = 'Self assessments'
+	self.config.tool_id = 'OneYouHA'
+	self.config.tool_title = 'How healthy is your heart'
+	self.config.accessibility_titles = {"form":"Please fill in your details","results":"Your heart age result"}
+	self.config.adobe_state = 0
+	if(document.referrer.indexOf('developer.api.nhs.uk') > -1){
+		self.config.adobe_analytics = false;
+	}
+	if(self.urlvars.hasOwnProperty('syn_id')){
+		self.syn_id = self.urlvars.syn_id;
+		self.env = 'syndicated'
+		self.syndicate = true;
 	}else{
-		self.syn_id = 'nhs'
-		self.syndicate = false
+		self.syn_id = 'nhs';
+		self.syndicate = false;
 	}
-	if(isMobile.any()){
-		self.device = 'phone'
+	if(self.config.adobe_analytics && self.config.framed){
+			$('head').append('<script src="'+self.path+'js/datalayer.js"></script>')
+			$('head').append('<script src="//assets.adobedtm.com/launch-ENe7f6cdd7cc05409b86547d9153429788.min.js" async></script>')
+			$('head').append("<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-NQPC6C');</script>");
 	}
-	if(self.qstr.layout == 'phone'){
-		self.$dots.remove()
-		self.layout = 'phone'
-		loadjscssfile('css/healthcheck_mob.css','css')
-	}
-	if(self.qstr.layout == 'phone' || self.device == 'tablet'){
-		document.getElementById('h_cm').type = 'number'
-		document.getElementById('h_ft').type = 'number'
-		document.getElementById('h_in').type = 'number'
-		document.getElementById('w_kg').type = 'number'
-		document.getElementById('w_st').type = 'number'
-		document.getElementById('w_lb').type = 'number'
-		document.getElementById('t_cholesterol_a').type = 'number'
-		document.getElementById('t_cholesterol_b').type = 'number'
-		document.getElementById('hdl_cholesterol_a').type = 'number'
-		document.getElementById('hdl_cholesterol_b').type = 'number'
-		document.getElementById('sys_bp').type = 'number'
-		if(isMobile.iOS()){
-			loadjscssfile('css/healthcheck_ios.css','css')
-		}
-	}
-	if(self.retina || self.qstr.layout == 'phone'){
-		var $imgs = $('img')
-		for(var i=0;i<$imgs.length;i++){
-			if($imgs[i].src.indexOf('@2x')==-1){
-				$imgs[i].src = $imgs[i].src.replace('.png','@2x.png')
-			}
-		}
-		this.img_str = '@2x'
-	}
-	loadjscssfile('js/z_lookupData.js','js')
-	this.setResponsive = function(){
-		self.responsive = true
-		self.w = '100%'
-		loadjscssfile('css/healthcheck_responsive.css','css');
-		var msg = '<div id="more_close"><a href="javascript:;" class="close"><img src="images/close2.png" alt="close" width="17" height="17" /></a></div><p><img src="images/public-health@2x.png" width="150px" height="94"></p>'
-		msg+= '<div class="p_hr">'+self.text_data.TextAreas.credit+'</div>'
-		msg+='<div class="p_hr">'+self.text_data.PopupText.P1.replace('<br><br>','').replace('<img','<img style="margin-left:-22px" ')+'</div>'
-		msg+='<div class="p_hr">'+self.text_data.PopupText.P2+'</div>'
-		$more_info_content.html(msg)
-		if(self.syndicate){
-			$('#splash_main').css('background-image','url(images/syn_logo@2x.png)')
-			$('#splash_main').css('background-size','186px 38px')
-			$('#splash_main').css('background-position','center 25px')
-		}
-		window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "'+$('#page_0').height()+'px"}', '*'); 
-		$('#more_close>a').on('click',function(){
-			$main.fadeIn(self.speed)
-			$more_info_content.fadeOut(self.speed,function(){
-				window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "'+$('#page_0').height()+'px"}', '*'); 
-			})
-		})
-		$('#more_info a').on('click',function(){
-			$more_info_content.fadeIn(self.speed)
-			$main.fadeOut(self.speed)
-			window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "'+($more_info_content.height()+30)+'px","scrolltop":true}', '*'); 
-		});
-		
-	}
-	this.getConfig = function(data){
-		$.getJSON(json_url,function(data){
-			self.stateObj = new maintain_state(self);
-			self.analyticsObj = new analytics(self,{'id':'NHS-HC-heartage','title':'Check your heart age','category':'Self assessments'},self.syn_id);
-			self.form = new form(self);
-			self.results = new results(self);
-			self.populateText(data)
-			$('#page_loader').fadeOut(500,function(){$('#page_loader').remove()});
-		})
-	}
-	this.dialog = function(key){
-		if(!locked){
-			$dialog_content.css('height','auto')
-			if(typeof(key) == 'string'){
-				var str = self.text_data.PopupText[key]
-			}else{
-				var str = '';
-				for(var i=0;i<key.length;i++){
-					if(i == key.length-1){
-						str+='<div class="p_hr" style = "border:none;">'
-					}else{
-						str+='<div class="p_hr">'
+	$.getJSON(path+'data.json?nocache='+nocache,function(data){
+		self.data = data;
+		self.data.TextAreas['path'] = path
+		if(self.urlvars.framed){
+			self.framed = true
+			$target.addClass('heartage-framed')
+			window.addEventListener("message", NHStoolMessage, false);
+			function NHStoolMessage(e) {
+				var data = (JSON.parse(event.data));
+				if(typeof(data.action) != 'undefined' && data.id == 'heartage'){
+					switch(data.action){
+						case "init":
+							self.postmessage = true
+							self.init();
+						break;
 					}
-					
-					str+=self.text_data.PopupText[key[i]]
-					
-					str+='</div>'
-					
 				}
 			}
-			if(str.length < 500){
-				$dialog_inner.width('70%').css('margin-left','-38%')
-			}else{
-				$dialog_inner.width('80%').css('margin-left','-43%')
-			}
-			str = str.replace('.png',self.img_str+'.png')
-			
-			self.lockView()
-			$dialog_outer.fadeTo(self.speed,0.6)
-			$dialog_inner.fadeIn(self.speed)
-			$dialog_content.html(str)
-			setTimeout(function(){
-				var h = $pages[self.page].height()
-				if($dialog_content.height()>$(window).height()*0.85){
-					$dialog_content.css('overflow-y','scroll').height($(window).height()*0.85).css('margin-top','10px')
-				}
-				var ih = Math.min($dialog_content.height(),$pages[self.page].height()+60)
-				if(self.page == 0){
-					ih+=80
-				}
-				if(self.qstr.layout == 'phone'){
-					$dialog_inner.css('top','20px')
-				}else{
-					$dialog_inner.css('top',Math.max(10,((h-ih)/2))+'px')
-				}
-				
-			},0)
-		}
-	}
-	this.dialogClose = function(key){
-			
-			self.unlockView()
-			$dialog_outer.fadeOut(self.speed/2)
-			$dialog_inner.fadeOut(self.speed/2,function(){
-				$dialog_content.css('overflow-y','auto').height(null).css('margin-top','0px')
-			})
-	}
-	this.lockView = function(){
-		$main.find("a").attr("tabindex", -1);
-		$main.find("input").attr("tabindex", -1);
-		$main.find("select").attr("tabindex", -1);
-	}
-	this.unlockView = function(){
-		$main.find("a").attr("tabindex", null);
-		$main.find("input").attr("tabindex", null);
-		$main.find("select").attr("tabindex", null);
-	}
-	this.populateText = function(data){
-		self.text_data = data
-		$('#splash_copy').html('<p>'+data.TextAreas.splash+'</p>')
-		$('#splash_footer').html('<img src="images/partner_logos'+self.img_str+'.png" width="335px" height="87px"><div>'+data.TextAreas.credit+'<div id = "partner_info"><a href = "javascript:;" id="p_info">More information about partners</a><br>Full <a href = "javascript:;" id="credits" >credits</a> can be read here</div></div>')
-		
-		$('#bp_data_alt').html(data.PopupText['3C2b'])
-		$('#cholesterol_data_alt').html(data.PopupText['3C1b'])
-		
-		if(self.device == 'desktop' || self.qstr.layout == 'phone'){
-			self.init()
+			window.parent.postMessage(JSON.stringify(self.msg_obj), '*');
+			var element = document.getElementById('tool_heart-age');
+			$(window).on('resize', function() {
+			  if ($(this).width() !== self.width) {
+				self.width = $(this).width();
+				self.resizeLayout((3.75*self.size),0);
+			  }
+			});
 		}else{
-			window.parent.postMessage('{"antbits_check_responsive": "true"}', '*')
-		}
-	}
-	this.paginate = function(){
-		for(var $p = 0;$p < $pages.length; $p++){
-			if($p == self.page){
-				$pages[$p].show()
-			}else{
-				$pages[$p].hide()
-			}
-		}
-		$back.on('click',function(e){
-			setTimeout(function(){
-				e.target.parentNode.blur()
-			},100)
-			if(!transition){
-				self.changePage(self.page-1,false)
-			}
-		})
-		$next.on('click',function(e){
-			setTimeout(function(){
-				e.target.parentNode.blur()
-			},100)
-			if(!transition){
-				if(self.form.validate(self.page)){
-					self.changePage(self.page+1,false)
-				}
-			}
-		})
-		$reset.on('click',function(e){
-			setTimeout(function(){
-				e.target.parentNode.blur()
-			},100)
-			self.resetAll()
-		})
-	}
-	this.resetAll = function(){
-		self.stateObj.clearState()
-		$main.fadeOut('spd',function(){
-			if(self.qstr.layout != 'phone' && !self.syndicate){
-				window.parent.scrollTo(0, 0);
-			}
-			location.reload();
-		})
-		
-	}
-	this.changePage = function(target,snap){
-		var spd = self.speed
-		var d = self.page-target
-		if(snap){
-			spd = 0
-		}
-		$('#page_'+self.page).fadeOut(spd)
-		if(self.page == 5 && target == 4){
-			self.results.tidyUp()
-		}
-		transition = true
-		self.page = target
-		self.analytics_page = Math.max(self.analytics_page,self.page)
-		
-		if(self.page == 1){
-			self.$header.delay(spd).fadeIn(spd)
-			if(d<0){
-				self.analyticsObj.start()
-				setTimeout(function() {
-					self.navFadeIn(spd) 
-                },spd);
-			}else{
-				self.$nav.fadeOut(spd,function(e){self.navFadeIn(spd)})
-			}
-			self.$dots.delay(spd).fadeIn(spd)
-			$('#page_'+self.page).delay(spd).fadeIn(spd,function(){transition=false})
-		}else if(self.page > 1 && self.page < 5){
-			if(d<0){
-				self.analyticsObj.advance(self.page,5)
-			}
-			self.$header.delay(spd).fadeIn(spd);
-			self.$nav.fadeOut(spd,function(e){
-				self.navFadeIn(spd);
-			})
-			self.$dots.delay(spd).fadeIn(spd,function(){transition=false});
-			$('#page_'+self.page).delay(spd).fadeIn(spd)
-		}else if(self.page == 5){
-			if(d<0){
-				self.analyticsObj.advance(self.page,5)
-			}
-			self.$header.fadeOut(spd)
-			self.$dots.fadeOut(spd)
-			self.$nav.fadeOut(spd)
-			$('#result_loader>div').css('background-color','#e81e26')
-			$result_loader.delay(spd).fadeIn(spd,function(){
-				window.scrollTo(0, 0);
-				self.form.calc()
-			}).delay(spd*5).fadeOut(spd,function(){transition=false})
-			setTimeout(function(){
-				$('#page_'+self.page).fadeIn(spd)
-				self.navFadeIn(spd)
-				$next.hide()
-				$reset.show()
-				
-			},spd*7)
-		}else{
-			self.$nav.fadeOut(spd)
-			self.$header.fadeOut(spd)
-			$('#page_'+self.page).delay(spd).fadeIn(spd,function(){transition=false})
-		}
-		if(self.qstr.layout == 'phone' && self.page <= 1){
-			$back.fadeOut(spd)
-		}else{
-			$back.delay(spd).fadeIn(spd);
-		}
-		if(!snap){
-			self.form.storeState()
-		}
-		if(self.page <= 4){
-			setTimeout(function(){
-			window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "700px"}', '*'); 
-			},spd)
-		}
-		if(self.tabbing){
-			switch(self.page){
-				case 0:
-					$('#start').focus();
-				break;
-				case 1:
-					$('#dob_day').focus();
-				break;
-				case 2:
-					$('#smoke').focus();
-				break;
-				case 3:
-					$('#cholesterol_yes').focus();
-				break;
-				case 4:
-					$('#diabetes_yes').focus();
-				break;
-			}
-		}
-		self.setPhoneHeight();
-	}
-	this.setPhoneHeight = function(){
-		var target = $('#page_'+self.page)
-		$('#shim').height(target.height()+100)
-	}
-	this.trackHeight = function(){
-		var t = 0
-		var target = $('#page_'+self.page)
-		var duration = (self.speed/2)
-		if(self.page == 5){
-			duration = (self.speed*2)
-		}
-		var tracker = setInterval(function(){
-			if(self.qstr.layout != 'phone'){
-				window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "'+(target.height()+100)+'px"}', '*'); 
-			}else{
-				
-			}
-			t+=(self.speed/50)
-			if(t>= duration){
-				clearInterval(tracker)
-			}
-			
-			if(self.page == 5){
-				if(self.qstr.layout == 'phone'){
-					self.$nav.css('top',target.height()+50)
-				}else{
-					self.$nav.css('top',target.height())
-				}
-				
-			}
-		},10)
-	}
-	this.navFadeIn = function(spd){
-		$next.show()
-		$reset.hide()
-		self.$nav.fadeIn(spd)
-		if(self.page<5){
-			self.$nav.css('top',($('#page_'+self.page).height()+90))
-		}
-		for(var i =1;i<5;i++){
-			if(i <= self.page){
-				$('#d'+i).attr('src','images/d_dn'+self.img_str+'.png')
-			}else{
-				$('#d'+i).attr('src','images/d_up'+self.img_str+'.png')
-			}
-		}
-		if(self.qstr.layout == 'phone'){
-			window.scrollTo(0, 0);
-			if(self.page==5){
-				self.$mob_header.show()
-			}else{
-				self.$mob_header.hide()
-			}
-		}
-	}
-	this.restoreState = function(obj){
-		if(!self.responsive){
-			self.form.restoreState(obj)
-			if(obj.page == 5){
-				self.results.counter_delay = 0
-			}
-			self.changePage(obj.page,true)
-		}
-	}
-	this.redirect = function(url){
-		window.parent.postMessage('{"antbits_redirect": "'+url+'"}', '*');   
-	}
-	
-	$(window).on('message', function(e) {
-		var tmp = (eval('(' +e.originalEvent.data+')'));
-		if(tmp.hasOwnProperty('antbits_set_responsive')){
-			if(tmp.antbits_set_responsive == 'mobile' || tmp.antbits_set_responsive == 'micro' || (self.syn_id == 'bhf' && self.device == 'phone')){
-				self.setResponsive();
-				$('#syn_header').remove()
-			}
 			self.init();
 		}
 	})
-	if(self.qstr.layout != 'phone'){
-		$(window).mousedown(function(e){
-			self.tabbing = false
-		})
-		$(window).keydown(function(e){
-			if(e.keyCode == 9 || e.keyCode == 13){
-				self.tabbing = true
-			}
-		})
+	$('head').append('<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">')
+	this.resizeLayout = function(adjust, speed ){
+		if(self.postmessage){
+			self.msg_obj.action = "resize" 
+			self.msg_obj.data = {"height":($target.height()+adjust),"speed":self.speed};
+			window.parent.postMessage(JSON.stringify(self.msg_obj), '*');
+		}
 	}
-	$(window).on('resize',function(e){
-		if(self.qstr.layout == 'phone'){
-			if(self.page == 5){
-				self.$nav.css('top',($('#page_'+self.page).height()+50))
-			}else{
-				self.$nav.css('top',($('#page_'+self.page).height()+100))
-			}
-			
+	this.scrollEvent = function(y){
+		if(self.postmessage){
+			self.msg_obj.action = "scroll"
+			self.msg_obj.data = {"y":y,"speed":self.speed};
+			window.parent.postMessage(JSON.stringify(self.msg_obj), '*');
+		}else{
+			var distance = $("html, body").scrollTop()-y;
+			//self.speedAdjust(h,self.speed)
+			$("html, body").animate({ scrollTop: y },self.speedAdjust(distance,self.speed));
 		}
-		self.results.resizeLayout()
-	})
+	
+	}
+	this.speedAdjust = function(distance,speed){
+		var s = speed*(1,Math.sqrt(distance)*0.05)
+		s = Math.min(1000,Math.max(300,s))
+		return s
+		//return 300;
+	}
 	this.init = function(){
-		$main.show()
-		
-		if(self.responsive){
-			self.w = '100%'
-			window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "'+($('#page_0').height()+30)+'px"}', '*'); 
-		}else{
-			window.parent.postMessage('{"antbits_w": "'+self.w+'","antbits_h": "700px"}', '*');
-		}
-		
-		self.$nav.fadeOut(0)
-		$('#start').on('click',function(){
-			if(self.device != 'phone'){
-				self.changePage(1,false);
-			}else{
-				self.redirect(redirect_str+'?layout=phone')
+		$target.html('')
+		for(var i in self.page_names){
+			$page = $('<div id  = "heartage-page-'+self.page_names[i]+'" class="heartage-page"></div>')
+			$target.append($page)
+			$page.load(path+'/templates/heartage-'+self.page_names[i]+'.html?nocache='+nocache,function(){
+				self.processTemplate($(this));
+			})
+			if(i>0){
+				$page.stop().fadeOut(0);
 			}
-		})
-		$('#dialog_close >a').on('click',function(){self.dialogClose()})
-		$('#p_info').on('click',function(){self.dialog(['P1','P2','P3'])})
-		$('#credits').on('click',function(){self.dialog('P4')})
-		$dialog_outer.on('click',function(){self.dialogClose()})
-		self.paginate()
-		if(self.qstr.layout == 'phone'){
-			$('#page_5>h2:first').remove()
-			document.addEventListener("touchstart", function(){}, true);
-			self.changePage(1,true);
-			self.stateObj.restoreState();
-			$('.form_btn').on('click',function(e){
-				e.target.style.backgroundColor = '#136ab9'
-				setTimeout(function(){
-					e.target.style.backgroundColor = '#1885e7'
-				},300)
-			})
-			$('#back').on('click',function(e){
-				e.target.style.backgroundColor = '#8e8e8e'
-				setTimeout(function(){
-					e.target.style.backgroundColor = '#999999'
-				},300)
+			self.page_divs.push($page);
+		}
+		
+	}
+	
+	this.nav = function(destination){
+		var h1 = $('#tool_heart-age').outerHeight(true);
+		var h2 = $('#heartage-page-'+destination).outerHeight(true)
+		self.resizeLayout(h2-h1,self.speed);
+		$('#tool_heart-age').height(h1)
+		//Accessibility, alter page title for screen readers
+		$('title').html(page_title+' | '+self.config.accessibility_titles[destination])
+		//
+		for(var i in self.page_divs){
+			self.page_divs[i].addClass('heartage-fixed')
+			if(destination == self.page_names[i]){
+				self.page_divs[i].stop().delay(self.speed).fadeIn(self.speed,function(){
+					self.resizeLayout(self.size*2,0);
+				})
+				$('#tool_heart-age').height(h1).stop().animate({'height':h2},(self.speed*2),function(){
+					$('#tool_heart-age>div').removeClass('heartage-fixed')
+					$('#tool_heart-age').css('height','auto')
+				})
+				self.scrollEvent($('#tool_heart-age').position().top)
+				if(self.keynav){
+					if(destination == 'results'){
+						$('#heartage-masthead>span').focus()
+					}else{
+						$('#heartage-page-'+destination+' h2:first-of-type').focus()
+					}
+					
+				}
+			}else{
+				self.page_divs[i].stop().fadeOut(self.speed)
+			}
+		}
+	}
+	this.initDetails = function(id){
+		var pad = 3.75
+		h = 0;
+		var findDiv = function(e){
+			if(e.target.nodeName == 'SPAN'){
+				return  $($(e.target.parentNode.parentNode).find('div')[0])
+			}else{
+				return  $($(e.target.parentNode).find('div')[0])
+			}
+		}
+		var findDetails = function(e){
+			if(e.target.nodeName == 'SPAN'){
+				return  $(e.target.parentNode.parentNode)
+			}else{
+				return  $(e.target.parentNode)
+			}
+		}
+		if(self.edge){
+			var $nodes = $("#"+id+" .heartage-edge-summary")
+			locked = true;
+			$("#"+id+" .heartage-edge-details>div").hide()
+			$nodes.click(function(e){
+				if($(e.target).parents('.heartage-locked').length==0){
+					var $div = findDiv(e)
+					var $details = findDetails(e)
+					if($details.hasClass('heartage-open')){
+						self.resizeLayout(0-$div.height(),self.speed);
+						$div.stop().animate({ 
+						   height: 0,
+						   marginTop: 0
+						}, self.speed, function(){
+							$details.removeClass('heartage-open')
+							$div.removeAttr("style");
+							$(this).hide();
+						});
+					}else{
+						var h = $div.outerHeight(true)
+						self.resizeLayout(h+(3.75*self.size),self.speed);
+						$div.show().addClass('heartage-zero-height')
+						$div.stop().animate({ 
+						   height: h,
+						   marginTop: '1em'
+						}, self.speed, function(){
+							locked = false;
+							$(this).removeClass('heartage-zero-height')
+							$details.addClass('heartage-open')
+							$(this).css('height','auto')
+						});
+					}
+				}else{
+					e.preventDefault();
+				}
 			})
 		}else{
-			self.stateObj.restoreState();
+			var $nodes = $("#"+id+" details>summary")
+			$nodes.click(function(e){
+				if($(e.target).parents('.heartage-locked').length==0 && !locked && !self.form.checkStatus($(e.target),'locked') ){
+					if(!self.keynav){
+						var $div = findDiv(e)
+						var $details = findDetails(e)
+						locked = true;
+						if($details.attr('open') == 'open' || $details.hasClass('heartage-open')){
+							e.preventDefault();
+							self.resizeLayout(0-$div.height(),self.speed)
+							$div.animate({'height':0,'margin-top':0},self.speed,function(){
+								locked = false;
+								$details.removeAttr('open').removeClass('heartage-open')
+								$(this).removeClass('heartage-zero-height');
+								$(this).removeClass('heartage-dormant');
+								$div.removeAttr("style")
+							})
+						}else{
+							$div.addClass('heartage-dormant');
+							locked = true;
+							poller = setInterval(function(){
+								if($div.height()>0){
+									h = $div.height()
+									self.resizeLayout(h+(pad*self.size),self.speed)
+									$div.addClass('heartage-zero-height');
+									$div.removeClass('heartage-dormant');
+									$div.animate({'height':h+'px','margin-top':'1em'},self.speed,function(){
+										locked = false;
+										$(this).removeClass('heartage-zero-height')
+										$details.addClass('heartage-open')
+										$(this).css('height','auto')
+									})
+									clearInterval(poller);
+								}
+							},100)
+						}
+					}
+				}else{
+					e.preventDefault();
+				}
+			});
 		}
-		self.setPhoneHeight();
+	}
+	this.processTemplate = function($target){
+		var id = $target[0].id
+		for(var i in self.data.TextAreas){
+			var re = new RegExp("{{"+i+"}}", "g");
+			var str = $target.html();
+			str = str.replace(re, self.data.TextAreas[i])
+			var re = new RegExp("src=\"images/", "g");
+			str = str.replace(re, 'src="'+self.path+'images/')
+			$target.html(str);
+		}
+		// if MS EDGE replace details elements
+		if(self.edge){
+			$('details>summary').replaceWith(function(){
+				return $("<a />", {html: $(this).html()}).addClass('heartage-edge-summary');
+			});
+			$('details').replaceWith(function(){
+				return $("<div />", {html: $(this).html()}).addClass('heartage-edge-details');
+			});
+			$target.find('a').attr('tabindex',0)
+		}
+		self.loaded++
+		if(self.loaded >= 3){
+			// All templates loaded, initialise the tool
+			self.loaded = 0
+			self.splash = new splashObj(this);
+			self.form = new formObj(this);
+			self.heartage = new heartageObj(self.path+"z_lookupData.js");
+			self.splash.setEvents();
+			self.form.setEvents();
+			self.results = new resultsObj(this);
+			self.results.setEvents();
+			self.resizeLayout(self.size*3.75,0);
+			self.analyticsObj = new analytics(self,{'id':'NHS-oneyou-heartage','title':'Check your heart age','category':'Self assessments'},self.syn_id);	
+			self.analyticsObj.antbitsLog(true,0)
+			// test stuff
+			//self.urlvars['test'] = 'test'
+			/*if(self.urlvars.hasOwnProperty('test')){
+				self.form.testData();
+				self.nav('form')
+				setTimeout(function(){
+					self.form.validate($('#heartage-page-form .heartage-panel-light'))
+				},self.speed*4)
+			}*/
+		}
+	}
+	this.getData = function(session_log){
+		session_log.v = 0
+		session_log.et = 'Not stated'
+		session_log.eth = 0
+		session_log.smk = 0
+		session_log.age = 0
+		session_log.bmi = 0
+		session_log.pc = 0
+		session_log.tn = 0
+		session_log.ch = 0
+		session_log.sbp = 0
+		session_log.p = Math.min(self.page,5)
+		return session_log;
+	}
+	this.isMobile = {
+		Android: function() {
+			return navigator.userAgent.match(/Android/i) ? true : false;
+		},
+		Tablet: function() {
+			return navigator.userAgent.match(/iPad|(?!.*mobile).*Android*/i) ? true : false;
+		},
+		iOS: function() {
+			return navigator.userAgent.match(/iPhone|iPad|iPod/i) ? true : false;
+		},
+		Windows: function() {
+			return navigator.userAgent.match(/IEMobile/i) ? true : false;
+		},
+		any: function() {
+			return (self.isMobile.Android() || self.isMobile.iOS() || self.isMobile.Windows() || self.isMobile.Tablet());
+		}
+	};
+	this.arrayUnique = function(a) {
+		return a.reduce(function(p, c) {
+			if (p.indexOf(c) < 0) p.push(c);
+			return p;
+		}, []);
+	};
+	this.replaceAll = function(str,mapObj){
+		var re = new RegExp(Object.keys(mapObj).join("|"),"gi");
+		return str.replace(re, function(matched){
+			return mapObj[matched.toLowerCase()];
+		});
+	}
+	this.linkOut = function(url){
+		if(self.postmessage){
+			self.msg_obj.action = "redirect" 
+			self.msg_obj.data = {"url":url};
+			window.parent.postMessage(JSON.stringify(self.msg_obj), '*');
+		}else{
+			window.open(url);
+		}
+	}
+	function getUrlVars(){
+		var vars = [], hash;
+		var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+		for(var i = 0; i < hashes.length; i++)
+		{
+			hash = hashes[i].split('=');
+			vars.push(hash[0]);
+			vars[hash[0]] = hash[1];
+		}
+		return vars;
 	}
 }

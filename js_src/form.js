@@ -1,772 +1,675 @@
 /*
 This file forms part of the NHS Choices Heart Age Tool.
-It is ©2014 NHS Choices.
+It is ©2020 NHS Choices.
 It is released under version 3 of the GNU General Public License
 Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+
+It contains code derived from https://github.com/BritCardSoc/JBS3Risk released by University of Cambridge.
+It also contains code derived from http://qrisk.org/lifetime/QRISK-lifetime-2011-opensource.v1.0.tgz released by ClinRisk Ltd.
 */
-function form(r){
-	var root = r
+var formObj = function(parent){
 	var self = this;
-	var pos
-	var $postcode = $('#postcode');
-	var $ch_error = $('#ch_error')
-	var $ch_error_inner = $('#ch_error_inner')
-	var $ch_block = $('#ch_block')
-	var P1Alert = false;
-	var P4Alert = false;
-	var dob = new Date();
-	var now = new Date();
-	var $dob_day = $('#dob_day')
-	var $dob_month = $('#dob_month')
-	var $dob_year = $('#dob_year')
-	var $h_imperial = $('#h_imperial')
-	var $w_imperial = $('#w_imperial')
-	var $t_cholesterol_wrap_a = $('#t_cholesterol_wrap_a')
-	var $t_cholesterol_wrap_b = $('#t_cholesterol_wrap_b')
-	var $hdl_cholesterol_wrap_a = $('#hdl_cholesterol_wrap_a')
-	var $hdl_cholesterol_wrap_b = $('#hdl_cholesterol_wrap_b')
-	var $h_metric = $('#h_metric')
-	var $w_metric = $('#w_metric')
-	var scrollH = 1000
-	var $t_cholesterol_a = $('#t_cholesterol_a')
-	var $hdl_cholesterol_a = $('#hdl_cholesterol_a')
-	var $t_cholesterol_b = $('#t_cholesterol_b')
-	var $hdl_cholesterol_b = $('#hdl_cholesterol_b')
-	var $sys_bp = $('#sys_bp')
-	var $h_cm = $('#h_cm')
-	var $h_ft = $('#h_ft')
-	var $h_in = $('#h_in')
-	var $w_kg = $('#w_kg')
-	var $w_st = $('#w_st')
-	var $w_lb = $('#w_lb')
-	var $smoke = $('#smoke')
-	var $ethnicity = $('#ethnicity')
-	var units = {"w":"imperial","h":"imperial","ch":"mmol/L"}
-	var townsend_api_path = 'https://change4life.antbits.com/townsend/api.php';
-	var tn_queue = false
-	var panel_heights = {'cholesterol':$('#cholesterol_data').height(),'bp':$('#bp_data').height()};
-	this.__h = null
-	this.__w = null
-	this.__t_ch = null
-	this.__hdl_ch = null
-	this.defaults = {'age':40,'b_AF':false,'b_ra':false,'b_renal':false,'b_treatedhyp':false,'b_type2':false,'bmi':22.49,'ethrisk':1,'fh_cvd':false,'rati':4.583333333333334,'sbp':130,'smoke_cat':0,'town':-0.810}
-	this.radio_arr = Array({'id':'gender','vals':Array(1,0),'val':null},{'id':'cardio','vals':Array('yes','no'),'val':null},{'id':'cholesterol','vals':Array('yes','no'),'val':null},{'id':'bp','vals':Array('yes','no'),'val':null},{'id':'bpt','vals':Array('yes','no'),'val':null},{'id':'diabetes','vals':Array('yes','no'),'val':null},{'id':'arthritis','vals':Array('yes','no'),'val':null},{'id':'kidney','vals':Array('yes','no'),'val':null},{'id':'af','vals':Array('yes','no'),'val':null},{'id':'rcvd','vals':Array('yes','no'),'val':null});
-	var gender
-	var townsend_score = self.defaults.town
-	var region = null
-	$postcode.on('keyup',function(){
-		self.tnQ()
-	})
-	$postcode.on('blur',function(){
-		self.tnQ()
-	})
-	$postcode.width($('#ethnicity').width()-5)
-	$postcode.on('focus',function(){
-		if($postcode.val() == 'e.g CB10 2PS'){
-			$postcode.css('color','#585858').val('')
+	var now = new Date()
+	self.parent = parent
+	self.unit_constraints = {"inches":[0,11],"feet":[0,999],"cm":[0,999],"pounds":[0,13],"stone":[0,999],"kg":[0,999],"mmol":[0,20],"mgdl":[0,774],"mmhg":[0,210]}
+	self.form_data = {}
+	var $feet_input = $('#heartage-height-feet')
+	var $inches_input = $('#heartage-height-inches')
+	var $cm_input = $('#heartage-height-cm')
+	var $kg_input = $('#heartage-weight-kg')
+	var $stone_input = $('#heartage-weight-stone')
+	var $pounds_input = $('#heartage-weight-pounds')
+	var $day_input = $('#heartage-dob-day')
+	var $month_input = $('#heartage-dob-month')
+	var $year_input = $('#heartage-dob-year')
+	var $total_cholesterol = $('#heartage-total_cholesterol-mmol')
+	var $hdl_cholesterol = $('#heartage-hdl_cholesterol-mmol')
+	var $postcode = $('#heartage-postcode')
+	var pc = 0;
+	var cholesterol_ratio = ''
+	var postcode = ''
+	var tn_queue = false;
+	var locked = false;
+	var conditions_warning = {};
+	this.setEvents = function(){
+		$('#heartage-page-form input').on('click keyup',function(e){
+			setTimeout(function(){self.checkErrorState(e)},50)
+		})
+		$('#heartage-page-form #heartage-calculate-btn').on('click',function(e){
+			e.preventDefault();
+			if(!self.checkStatus($('#heartage-calculate-btn'),'locked')){
+				if(self.validate($('#heartage-page-form .heartage-panel-light'))){
+				}else{
+					var pos = $('#heartage-page-form .heartage-panel-light.heartage-error').first().position();
+					self.parent.scrollEvent(pos.top)
+					self.parent.resizeLayout(self.parent.size * 3.75 , self.parent.speed)
+					setTimeout(function(){
+						$('#heartage-page-form .heartage-panel-light.heartage-error').first().find('input').first().focus()
+					},self.parent.speed)
+					
+				}
+			}
+		})
+		$('#heartage-page-form input[type=radio][name=heartage-smoke]').change(function() {
+			self.form_data.smoke_str = $($('#heartage-formpanel-smoke .nhsuk-radios>div>label')[this.value]).html()
+			
+		});
+		$('#heartage-page-form input[type=radio][name=heartage-cvd]').change(function() {
+			if (this.value == 'true') {
+				self.togglePanel($('#heartage-cvd-warning'),true)
+				self.lockFormItemsAfter('heartage-formpanel-cvd')
+			}else{
+				self.togglePanel($('#heartage-cvd-warning'),false)
+				self.unlockFormItems()
+			}
+		});
+		$('#heartage-page-form input[type=radio][name=heartage-diabetes], #heartage-page-form input[type=radio][name=heartage-arthritis] , #heartage-page-form input[type=radio][name=heartage-ckd] , #heartage-page-form input[type=radio][name=heartage-atrfib]').change(function(e) {
+			var id = e.target.id.split('-')[1]
+			//console.log(conditions_warning)
+			if (this.value == 'true') {
+				show_warning = true;
+				for(var i in conditions_warning){
+					//console.log($('#heartage-'+i+'-warning').css('display'))
+					if(conditions_warning[i] && $('#heartage-'+i+'-warning').css('display') != 'none' ){
+						show_warning = false;
+					}
+				}
+				if(show_warning){
+					self.togglePanel($('#heartage-'+id+'-warning'),true)
+					
+				}
+				conditions_warning[id] = true;
+			}else{
+				self.togglePanel($('#heartage-'+id+'-warning'),false)
+				conditions_warning[id] = false;
+			}
+		});
+		$('#heartage-page-form input[type=radio][name=heartage-cvdfam]').change(function() {
+			if (this.value == 'true') {
+				self.togglePanel($('#heartage-cvdfam-warning'),true)
+			}else{
+				self.togglePanel($('#heartage-cvdfam-warning'),false)
+			}
+		});
+		$('#heartage-page-form input[type=radio][name=heartage-cholesterol]').change(function() {
+			if (this.value == 'true') {
+				self.togglePanel($('#heartage-cholesterol-input-panel'),true)
+			}else{
+				self.togglePanel($('#heartage-cholesterol-input-panel'),false)
+			}
+		});
+		$('#heartage-page-form input[type=radio][name=heartage-bp]').change(function() {
+			if (this.value == 'true') {
+				self.togglePanel($('#heartage-bp-input-panel'),true)
+			}else{
+				self.togglePanel($('#heartage-bp-input-panel'),false)
+			}
+		});
+		$('#heartage-weight input, #heartage-height input , #heartage-cholesterol-input-panel input , #heartage-bp-input-panel input').on('keyup change',function(e){
+			// check event does not originate from hidden input
+			if(!locked){
+				// auto correct inputs
+				var tmp = e.target.id.split('-')
+				var val = Math.abs(e.target.value)
+				if(tmp[2] == 'cm' || tmp[2] == 'kg'  || tmp[2] == 'mmol'){
+					val=val.toFixed(1)
+				}else if(tmp[2] == 'feet' || tmp[2] == 'inches' || tmp[2] == 'stone' || tmp[2] == 'pounds' || tmp[2] == 'mmhg'){
+					val=Math.round(val)
+				}
+				if(isNaN(val)){
+					e.target.value = ''
+				}
+				if(val > 0){
+					var m = 1
+					if(tmp[1].indexOf('cholesterol')){
+						self.checkCholesterolRatio();
+					}
+					if(tmp[1] == 'hdl_cholesterol'){
+						m = 0.6
+					}
+					var preval = val
+					val = Math.min(val,Math.floor(self.unit_constraints[tmp[2]][1]*m))
+					val = Math.max(val,Math.floor(self.unit_constraints[tmp[2]][0]*m))
+					if(val - preval != 0){
+						e.target.value = val
+					}
+					
+				}
+				self.convertUnits(tmp[1],tmp[2])
+			}
+		})
+		$('#heartage-dob-day').on('keyup',function(e){
+			var val = $(this).val()
+			$(this).val(Math.min(val,31))
+		})
+		$('#heartage-dob-month').on('keyup',function(e){
+			var val = $(this).val()
+			$(this).val(Math.min(val,12))
+		})
+		self.setUnitToggle('height','imperial','metric')
+		self.setUnitToggle('weight','imperial','metric')
+		self.setUnitToggle('cholesterol','mmol','mgdl')
+		self.parent.initDetails('heartage-page-form');
+		self.initPanels('heartage-page-form');
+		$('#heartage-cholesterol-advice').show();
+		$('#heartage-bp-advice').show();
+		$postcode.on('keyup',function(){
+			self.tnQ();
+		})
+		$postcode.on('blur',function(){
+			self.tnQ();
+		})
+		$(window).mousedown(function(e){
+			self.parent.keynav = false;
+			$('#tool_heart-age').removeClass('keynav');
+		});
+		$(window).keydown(function(e){
+			if(e.keyCode == 9 || e.keyCode == 13){
+				self.parent.keynav = true;
+				$('#tool_heart-age').addClass('keynav');
+			}
+		})
+	}
+	this.clear = function(){
+		self.form_data.townsend = null;
+		$('#tool_heart-age input[type = text]').val('')
+		$('#tool_heart-age input[type = number]').val('')
+		$('#tool_heart-age input[type = radio]').prop('checked', false);
+		self.togglePanel($('#heartage-cvd-warning'),false)
+		self.togglePanel($('#heartage-diabetes-warning'),false)
+		self.togglePanel($('#heartage-arthritis-warning'),false)
+		self.togglePanel($('#heartage-ckd-warning'),false)
+		self.togglePanel($('#heartage-atrfib-warning'),false)
+		self.togglePanel($('#heartage-cvdfam-warning'),false)
+		self.togglePanel($('#heartage-cholesterol-input-panel'),false)
+		self.togglePanel($('#heartage-bp-input-panel'),false)
+		$('#tool_heart-age details').removeAttr("style").removeAttr('open').removeClass('heartage-open').removeClass('heartage-dormant');	
+		
+	}
+	this.testData = function(){
+		$cm_input.val(177.8)
+		$kg_input.val(82.1)
+		$day_input.val(1)
+		$month_input.val(1)
+		$year_input.val(1970)
+		self.form_data.smoke_str = 'I smoke 20+ a day'
+		//$total_cholesterol.val(4.8)
+		//$hdl_cholesterol.val(1.2)
+		$postcode.val('GL14 3EX')
+		self.convertUnits('height','cm')
+		self.convertUnits('weight','kg')
+		self.checkTownsend()
+		$('input[type=radio]').attr('checked','checked')
+	}
+	this.checkCholesterolRatio = function(){
+		cholesterol_ratio = ''
+		var tc = $total_cholesterol.val()
+		var hc = $hdl_cholesterol.val()
+		if(hc > tc && hc != '' && tc != ''){
+			cholesterol_ratio = 'low'
+		}else if(tc / hc > 12.5 && hc != '' && tc != ''){
+			cholesterol_ratio = 'high'
 		}
-	})
-	$h_metric.hide()
-	$w_metric.hide()
-	$t_cholesterol_wrap_b.hide()
-	$hdl_cholesterol_wrap_b.hide()
-	$('#h_imperial>div>a').on('click',function(){self.unitSwap('h','imperial','metric')})
-	$('#h_metric>div>a').on('click',function(){self.unitSwap('h','metric','imperial')})
-	$('#w_imperial>div>a').on('click',function(){self.unitSwap('w','imperial','metric')})
-	$('#w_metric>div>a').on('click',function(){self.unitSwap('w','metric','imperial')})
-	$('#hdl_cholesterol_wrap_a>div>a').on('click',function(){
-		self.unitSwap('t_cholesterol_wrap','a','b')
-		self.unitSwap('hdl_cholesterol_wrap','a','b')
-	})
-	$('#hdl_cholesterol_wrap_b>div>a').on('click',function(){
-		self.unitSwap('t_cholesterol_wrap','b','a')
-		self.unitSwap('hdl_cholesterol_wrap','b','a')
-	})
-	
-	$w_kg.on('keyup',function(){self.checkWeight('kg')})
-	$w_st.on('keyup',function(){self.checkWeight('st')})
-	$w_lb.on('keyup',function(){self.checkWeight('lb')})
-	$h_cm.on('keyup',function(){self.checkHeight('cm')})
-	$h_ft.on('keyup',function(){self.checkHeight('ft')})
-	$h_in.on('keyup',function(){self.checkHeight('in')})
-	
-	$t_cholesterol_wrap_a.on('keyup',function(e){if(keyEvtNumeric(e)){self.checkCholesterol('mmol/L')}})
-	$hdl_cholesterol_wrap_a.on('keyup',function(e){if(keyEvtNumeric(e)){self.checkCholesterol('mmol/L')}})
-	$t_cholesterol_wrap_b.on('keyup',function(e){if(keyEvtNumeric(e)){self.checkCholesterol('mg/dl')}})
-	$hdl_cholesterol_wrap_b.on('keyup',function(e){if(keyEvtNumeric(e)){self.checkCholesterol('mg/dl')}})
-	
-	$t_cholesterol_a.on('keyup',function(){self.storeState()})
-	$hdl_cholesterol_a.on('keyup',function(){self.storeState()})
-	$t_cholesterol_b.on('keyup',function(){self.storeState()})
-	$hdl_cholesterol_b.on('keyup',function(){self.storeState()})
-	$sys_bp.on('keyup',function(){
-		if(!isNaN($sys_bp.val())){
-			$sys_bp.val(Math.max(Math.min($sys_bp.val(),210),0))
+	}
+	this.checkErrorState = function(e){
+		if(self.checkStatus($(e.target),'error')){
+			self.validate($(e.target).closest('.heartage-panel-light'))
 		}
-		self.storeState()
-	})
 	
-	$('#postcode_info').on('click',function(){root.dialog('1C4')})
-	$('#ethnicity_info').on('click',function(){root.dialog('1C6')})
-	$('#cv_info').on('click',function(){root.dialog('1C5')})
-	$('#cholesterol_info').on('click',function(){root.dialog('3C1')})
-	$('#bp_info').on('click',function(){root.dialog('3C2')})
-	$('#bpt_info').on('click',function(){root.dialog('3C3')})
-	$('#cvd_info').on('click',function(){root.dialog('4C5')})
+	}
+	this.convertUnits = function(data_type,unit_type){
+		locked = true
+		var val = 0
+		if(unit_type == 'feet' || unit_type == 'inches'){
+			val = ($feet_input.val()*30.48)+($inches_input.val()*2.54)
+			if($feet_input.val() == '' && $inches_input.val() == ''){
+				$cm_input.val('')
+			}else{
+				$cm_input.val(val.toFixed(1))
+			}
+			
+		}
+		if(unit_type == 'cm'){
+			val = $cm_input.val()
+			var feet = Math.floor(val/30.48);
+			var inches = Math.round(val/2.54)-(feet*12);
+			$feet_input.val(feet)
+			$inches_input.val(inches)
+		}
+		if(unit_type == 'stone' || unit_type == 'pounds'){
+			val = ($stone_input.val()/0.157473)+($pounds_input.val()/2.204622)
+			if($stone_input.val() == '' && $pounds_input.val() == ''){
+				$kg_input.val('')
+			}else{
+				$kg_input.val(val.toFixed(1))
+			}
+		}
+		if(unit_type == 'kg'){
+			val = $kg_input.val()
+			var stone = Math.floor(val*0.157473);
+			var pounds = Math.round(val*2.204622)-(stone*14);
+			$stone_input.val(stone)
+			$pounds_input.val(pounds)
+		}
+		if(unit_type == 'mmol'){
+			val = parseFloat($('#heartage-'+data_type+'-mmol').val());
+			$('#heartage-'+data_type+'-mgdl').val((val*38.66976).toFixed(0));
+		}
+		if(unit_type == 'mgdl'){
+			val = parseFloat($('#heartage-'+data_type+'-mgdl').val());
+			$('#heartage-'+data_type+'-mmol').val((val*0.02586).toFixed(1));
+		}
+		locked = false;
+	}
 	
-	$ethnicity.on('change',function(){
-		self.storeState()
-	})
-	$smoke.on('change',function(){
-		self.storeState()
-	})
+	this.initPanels = function(id){
+		$("#"+id+" .heartage-warning").hide(0);
+		$("#"+id+" .heartage-input-panel").hide(0);
+	}
+	this.validate = function($target){
+		var submit_form = false;
+		if($target.length > 1){
+			submit_form = true;
+		}
+		var valid = true;
+		$target.each(function(index, element) {
+			var error = '';
+			var radio_checked = false
+			var text_inputted = false
+            var id = $(element).attr('id').replace('heartage-formpanel-','');
+			$(element).find('input[type="text"], input[type="number"]').each(function(index, element) {
+				if($(element).val()==''){
+					error = self.parent.data.TextAreas.error_incomplete_text
+				}
+            });
+			if(error == ''){
+				text_inputted = true
+				self.form_data[id] = $(element).val();
+			}
+			if($(element).find('input[type="radio"]').length>0){
+				if($(element).find('input[type="radio"]:checked').length == 0){
+					error = self.parent.data.TextAreas.error_incomplete_radio
+				}else{
+					radio_checked = true
+					self.form_data[id] = $('input[name=heartage-'+id+']:checked').val()
+				}
+			}
+			
+			switch(id){
+				case 'dob':
+					if(error == '' && $year_input.val().length >= 4){
+						var oldest = new Date(now.getFullYear()-95,now.getMonth(),now.getDate());
+						var youngest = new Date(now.getFullYear()-30,now.getMonth(),now.getDate());
+						var dob = new Date($year_input.val(),$month_input.val()-1,$day_input.val());
+						if(dob > youngest){
+							error = self.parent.data.TextAreas.error_too_young
+						}
+						if(dob < oldest){
+							error = self.parent.data.TextAreas.error_too_old
+						}
+						if(dob > now){
+							error = self.parent.data.TextAreas.error_future_date
+						}
+						if($year_input.val() != dob.getFullYear() || $month_input.val() != dob.getMonth()+1 || $day_input.val() != dob.getDate()){
+							error = self.parent.data.TextAreas.error_incorrect_date
+						}
+						self.form_data['dob'] = dob
+					
+					}
+					if($year_input.val().length < 4 || $month_input.val().length < 1 || $day_input.val().length < 1){
+						error = self.parent.data.TextAreas.error_date_incomplete
+						
+					}
+					
+				break;
+				case 'postcode':
+					error = '';
+				break;
+				case 'sex':
+					if(self.form_data['sex'] == ''){
+						error = self.parent.data.TextAreas.error_sex
+					}
+					
+				break;
+				case 'eth':
+					error = '';
+				break;
+				case 'height':
+					error = ''
+					if($cm_input.val() > 50 && $cm_input.val() < 241){
+						self.form_data['height'] = parseFloat($cm_input.val())
+					}else if($cm_input.val() == ''){
+						error = self.parent.data.TextAreas.error_height_incomplete
+					}else if($cm_input.val() <= 50){
+						error = self.parent.data.TextAreas.error_too_small.replace('[unit]','Height')
+					}else if($cm_input.val() >= 241){
+						error = self.parent.data.TextAreas.error_too_large.replace('[unit]','Height')
+					}else{
+						error = self.parent.data.TextAreas.error_height_incomplete
+					}
+				break;
+				case 'weight':
+					error = ''
+					if($kg_input.val() > 12 && $kg_input.val() < 318){
+						self.form_data['weight'] = parseFloat($kg_input.val())
+					}else if($kg_input.val() == ''){
+						error = self.parent.data.TextAreas.error_weight_incomplete
+					}else if($kg_input.val() <= 12){
+						error = self.parent.data.TextAreas.error_too_small.replace('[unit]','Weight')
+					}else if($kg_input.val() >= 318){
+						error = self.parent.data.TextAreas.error_too_large.replace('[unit]','Weight')
+					}else{
+						error = self.parent.data.TextAreas.error_weight_incomplete
+					}
+					
+				break;
+				case 'cholesterol':
+					if(radio_checked){
+						if($("input[name='heartage-cholesterol']:checked").val() == 'true'){
+							self.checkCholesterolRatio()
+							if(text_inputted && cholesterol_ratio == ''){
+								error = ''
+							}else if(cholesterol_ratio != ''){
+								error = self.parent.data.TextAreas['error_cholesterol_ratio_'+cholesterol_ratio]
+							}else{
+								error = self.parent.data.TextAreas.error_incomplete_text
+							}
+							self.form_data['ch_skipped'] = false;
+							self.form_data['cholesterol'] = {'total':$('#heartage-total_cholesterol-mmol').val(),'hdl':$('#heartage-hdl_cholesterol-mmol').val()}
+						}else{
+							error = ''
+							self.form_data['ch_skipped'] = true;
+							self.form_data['cholesterol'] = {'total':0,'hdl':0}
+							
+ 						}
+					}
+				break;
+				case 'bp':
+					self.form_data['bp'] = self.parent.results.baseline.sbp
+					if(radio_checked){
+						if($("input[name='heartage-bp']:checked").val() == 'true'){
+							if(text_inputted){
+								self.form_data['bp'] = $('#heartage-bp-mmhg').val()
+								error = ''
+							}else{
+								error = self.parent.data.TextAreas.error_incomplete_text
+							}
+							self.form_data['bp_skipped'] = false;
+						}else{
+							error = ''
+							self.form_data['bp_skipped'] = true;
+						}
+					}
+				break;
+				default:
+				break;
+			}
+			
+			var $old_errors = $(element).find('.heartage-error-msg')
+			if($old_errors.length>0 && error == ''){
+				$(element).removeClass('heartage-error')
+				$old_errors.stop().slideUp(self.parent.speed,function(){
+					$(this).remove();
+					//self.parent.resizeLayout(self.parent.size*3.75,self.parent.speed);
+				})	
+			}
+			if(error != ''){
+				if($old_errors.length>0){
+					$(element).find('.heartage-error-msg').html(error)
+				}else{
+					$(element).find('h3').after('<div class = "heartage-error-msg">'+error+'</div>')
+				}
+				$(element).addClass('heartage-error');
+				valid = false;
+			}
+			
+        });
+		if(valid && submit_form){
+			var age = Math.floor((now.getTime() - self.form_data['dob'].getTime())/31557600000);
+			var bmi = self.form_data.weight / Math.pow(self.form_data.height/100,2);
+			if(self.form_data.ch_skipped){
+				var rati = self.parent.results.baseline.rati
+			}else{
+				var rati = parseFloat(self.form_data.cholesterol.total)/parseFloat(self.form_data.cholesterol.hdl)
+			}
+			if(self.form_data.bp_skipped){
+				var sbp = self.parent.results.baseline.sbp
+			}else{
+				var sbp = parseInt(self.form_data.bp)
+			}
+			self.form_data.heartage_input = {
+				"age":age,
+				"b_AF": eval(self.form_data.atrfib),
+				"b_ra": eval(self.form_data.arthritis),
+				"b_renal": eval(self.form_data.ckd),
+				"b_treatedhyp": eval(self.form_data.bpt),
+				"b_type2": eval(self.form_data.diabetes),
+				"bmi":bmi,
+				"surv": 95-age,
+				"tc":0,
+				"bmi_rounded":parseFloat(bmi.toFixed(1)),
+				"fh_cvd": eval(self.form_data.cvdfam),
+				"gender": parseInt(self.form_data.sex),
+				"rati": rati,
+				"sbp": sbp,
+				"smoke_cat": parseInt(self.form_data.smoke)
+			}
+			if(!isNaN(self.form_data.eth) && self.form_data.eth != ''){
+				self.form_data.heartage_input.ethrisk = parseInt(self.form_data.eth);
+			}else{
+				self.form_data.heartage_input.ethrisk = 0;
+			}
+			if(!isNaN(self.form_data.cholesterol.total) && self.form_data.cholesterol.total != ''){
+				self.form_data.heartage_input.tc = self.form_data.cholesterol.total
+			}else{
+				self.form_data.heartage_input.tc = 0;
+			}
+			if(self.form_data.townsend == null){
+				self.form_data.heartage_input.town = self.parent.results.baseline.town
+			}else{
+				if(typeof self.form_data.townsend.townsend_score == 'undefined' || self.form_data.townsend.townsend_score == null ){
+					self.form_data.heartage_input.town = self.parent.results.baseline.town
+				}else{
+					self.form_data.heartage_input.town = parseFloat(self.form_data.townsend.townsend_score)
+				}
+			}
+			//console.log(self.form_data.heartage_input)
+			self.parent.results.preload(self.form_data)
+		}
+		return valid
+	}
 	this.tnQ = function(){
 		if(!tn_queue){
-			tn_queue = true
+			tn_queue = true;
 			setTimeout(function(){
-				self.checkTownsend()
+				self.checkTownsend();
 				tn_queue = false;
-			},2000)
-		}
-	}
-	this.checkCholesterol = function(val){
-		if(val == 'mmol/L'){
-			pos = $hdl_cholesterol_a.offset()
-			if(isNaN(parseFloat($t_cholesterol_a.val()))){
-				$t_cholesterol_a.val('')
-				$t_cholesterol_b.val('')
-				self.__t_ch = 0
-			}else{
-				self.__t_ch = Math.max(Math.min(parseFloat($t_cholesterol_a.val()),20),0);
-				if($t_cholesterol_a.val().slice(-1) != '.'){
-					$t_cholesterol_a.val(self.__t_ch)
-				}
-				$t_cholesterol_b.val((self.__t_ch*38.66976).toFixed(0))
-			}
-			if(isNaN(parseFloat($hdl_cholesterol_a.val()))){
-				$hdl_cholesterol_a.val('')
-				$hdl_cholesterol_b.val('')
-				self.__hdl_ch = 0
-			}else{
-				self.__hdl_ch = Math.max(Math.min(parseFloat($hdl_cholesterol_a.val()),12),0);
-				if($hdl_cholesterol_a.val().slice(-1) != '.'){
-					$hdl_cholesterol_a.val(self.__hdl_ch)
-				}
-				$hdl_cholesterol_b.val((self.__hdl_ch*38.66976).toFixed(0))
-			}
-		}else{
-			pos = $hdl_cholesterol_b.offset()
-			if(isNaN(parseFloat($t_cholesterol_b.val()))){
-				$t_cholesterol_a.val('')
-				$t_cholesterol_b.val('')
-				self.__t_ch = 0
-			}else{
-				self.__t_ch = Math.max(Math.min(parseFloat($t_cholesterol_b.val()),774),0);
-				if($t_cholesterol_b.val().slice(-1) != '.'){
-					$t_cholesterol_b.val(self.__t_ch)
-				}
-				$t_cholesterol_a.val((self.__t_ch*0.02586).toFixed(1))
-			}
-			if(isNaN(parseFloat($hdl_cholesterol_b.val()))){
-				$hdl_cholesterol_a.val('')
-				$hdl_cholesterol_b.val('')
-				self.__hdl_ch = 0
-			}else{
-				self.__hdl_ch = Math.max(Math.min(parseFloat($hdl_cholesterol_b.val()),464),0);
-				if($hdl_cholesterol_b.val().slice(-1) != '.'){
-					$hdl_cholesterol_b.val(self.__hdl_ch)
-				}
-				$hdl_cholesterol_a.val((self.__hdl_ch*0.02586).toFixed(1))
-			}
-		}
-		if(self.__hdl_ch > self.__t_ch && $hdl_cholesterol_a.val() != '' && $t_cholesterol_a.val() != ''){
-			self.chError(0,pos)
-		}else if(self.__t_ch/self.__hdl_ch>12.5 && $hdl_cholesterol_a.val() != '' && $t_cholesterol_a.val() != ''){
-			self.chError(1,pos)
-		}else{
-			self.chError(2,pos)
-		}
-		self.storeState()
-	}
-	this.chError = function(opt,pos){
-		if(pos.left == 0 || pos.right == 0){
-			opt = 2
-		}else{
-			if( root.qstr.layout == 'phone'){
-				$ch_error.css('left',pos.left).css('top',pos.top-58)
-			}else{
-				$ch_error.css('left',pos.left).css('top',pos.top-70)
-			}
-		}
-		switch(opt){
-			case 0:
-				$ch_error.fadeIn(root.speed)
-				$ch_error_inner.html('Cholesterol ratio too small please check')
-				$hdl_cholesterol_a.css('border','2px solid #ef6167').css('background-color','#fad2d4').css('margin','0px')
-				$hdl_cholesterol_b.css('border','2px solid #ef6167').css('background-color','#fad2d4').css('margin','0px')
-			break;
-			case 1:
-				$ch_error.fadeIn(root.speed)
-				$ch_error_inner.html('Cholesterol ratio too big please check')
-				$hdl_cholesterol_a.css('border','2px solid #ef6167').css('background-color','#fad2d4').css('margin','0px')
-				$hdl_cholesterol_b.css('border','2px solid #ef6167').css('background-color','#fad2d4').css('margin','0px')
-			break;
-			case 2:
-				$ch_error.fadeOut(root.speed)
-				$hdl_cholesterol_a.css('border','1px solid #a9a9a9').css('background-color','#fff').css('margin','1px')
-				$hdl_cholesterol_b.css('border','1px solid #a9a9a9').css('background-color','#fff').css('margin','1px')
-				self.highlightBlock('t_cholesterol_a','off')
-			break;
-		}
-	}
-	this.checkWeight = function(val){
-		if(val == 'kg'){
-			if(isNaN(parseFloat($w_kg.val()))){
-				$w_kg.val('')
-				$w_st.val('')
-				$w_lb.val('')
-				self.__w = 0
-			}else{
-				self.__w = parseFloat($w_kg.val());
-				var stone = Math.floor(self.__w*0.157473)
-				var lbs = Math.round(self.__w*2.204622)-(stone*14)
-				if(lbs == 14){
-					lbs = 0
-					stone++
-				}
-				$w_st.val(stone)
-				$w_lb.val(lbs)
-				
-			}
-		}else{
-			var w = 0
-			var pounds = parseInt($w_lb.val(),10)
-			var stone = parseInt($w_st.val(),10)
-			if(isNaN(stone)){
-				$w_st.val('')
-				$w_kg.val('')	
-				self.__w = 0
-			}else{
-				w+= (parseInt($w_st.val(),10)/0.157473);
-			}
-			if(isNaN(pounds)){
-				$w_lb.val('')
-			}else{
-				$w_lb.val(Math.max(0,Math.min(14,pounds)))
-				w+= (parseInt($w_lb.val(),10)/2.204622)
-			}
-			if(w>0){
-				self.__w = w
-				$w_kg.val(Math.round(w*10)/10)
-			}
-		}
-		self.storeState()
-	}
-	this.checkHeight = function(val){
-		if(val == 'cm'){
-			if(isNaN(parseInt($h_cm.val(),10))){
-				$h_cm.val('')
-				$h_ft.val('')
-				$h_in.val('')
-				self.__h = 0
-			}else{
-				self.__h = parseFloat($h_cm.val(),10);
-				var feet = Math.floor(self.__h/30.48)
-				var inches = Math.round(self.__h/2.54)-(feet*12)
-				if(inches == 12){
-					inches = 0
-					feet++
-				}
-				$h_ft.val(feet)
-				$h_in.val(inches)
-			}
-		}else{
-			var h = 0
-			var inches = parseInt($h_in.val(),10)
-			var feet = parseInt($h_ft.val(),10)
-			if(isNaN(feet)){
-				$h_ft.val('')	
-				$h_cm.val('')
-				self.__h = 0;
-			}else{
-				h+= parseInt($h_ft.val(),10)*30.48;
-			}
-			if(isNaN(inches)){
-				$h_in.val('')
-			}else{
-				$h_in.val(Math.max(0,Math.min(11,inches)))
-				h+= parseInt($h_in.val(),10)*2.54
-			}
-			if(h>0){
-				self.__h = h
-				$h_cm.val(Math.round(h*10)/10)
-			}
-		}
-		self.storeState()
-	}
-	this.checkDob = function(){
-		
-		if(parseInt($dob_day.val())>0 && parseInt($dob_day.val())<=32 && parseInt($dob_month.val())>0 && parseInt($dob_month.val())<=12 && parseInt($dob_year.val())> 1890 && parseInt($dob_year.val())<= now.getFullYear()){
-			
-			dob = new Date($dob_year.val(),($dob_month.val()-1),$dob_day.val())
-			self.storeState('dob')
-			return true
-		}else{
-			return false
-		}
-		
-	}
-	this.unitSwap = function(id,hide,show){
-		$('#'+id+'_'+show).fadeIn(root.speed)
-		$('#'+id+'_'+hide).fadeOut(root.speed)
-	}
-	this.initRadio = function(){
-		function radio_over(e){
-			var id = e.target.id
-			if(e.target.nodeName != 'A'){
-				id = e.target.parentNode.id
-			}
-			var img = $('#'+id+'>img')
-			if(img.attr('src').indexOf('_on')==-1){
-				img.attr('src',img.attr('src').replace('_off','_over'))
-			}
-		}
-		function radio_out(e){
-			var id = e.target.id
-			if(e.target.nodeName != 'A'){
-				id = e.target.parentNode.id
-			}
-			var img = $('#'+id+'>img')
-			if(img.attr('src').indexOf('_on')==-1){
-				img.attr('src',img.attr('src').replace('_over','_off'))
-			}
-		}
-		for(var i in this.radio_arr){
-			for(var j in this.radio_arr[i].vals){
-				var $tmp = $('#'+this.radio_arr[i].id+'_'+this.radio_arr[i].vals[j]);
-				$tmp.on('click',function(e){self.toggleRadio(e)});
-				$tmp.on('mouseover',function(e){
-					radio_over(e)
-				});
-				$tmp.on('focus',function(e){
-					radio_over(e)
-				});
-				$tmp.on('mouseout',function(e){
-					radio_out(e)
-				});
-				$tmp.on('blur',function(e){
-					radio_out(e)
-				});
-
-			}
+			},2000);
 		}
 	}
 	this.checkTownsend = function(){
-		var regPostcode = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/gi;
-		var postcode = $postcode.val();
-		if(regPostcode.test(postcode)){
-			$postcode.val(postcode.toUpperCase().replace(' ',''))
-			$.getJSON(townsend_api_path+'?p='+postcode, function(data) {
-				if(!isNaN(parseFloat(data.townsend_score))){
-					townsend_score = parseFloat(data.townsend_score);
-					region = data.region
-					self.storeState()
-				}
-			});
-		}else{
-			townsend_score = self.defaults.town
-		}
-	}
-	this.storeState = function(){
-		var obj = {"bmi":self.bmi(),"radio_arr":this.radio_arr,"townsend_score":townsend_score,"region":region,"page":root.page,"units":units,"dob":dob,"t_cholesterol":$t_cholesterol_a.val(),"hdl_cholesterol":$hdl_cholesterol_a.val(),"sys_bp":$sys_bp.val(),"postcode":$postcode.val(),"w":self.__w,"h":self.__h,"smoke":$smoke.val(),"ethnicity":$ethnicity.val()}
-		
-		root.stateObj.storeState(obj)
-	}
-	this.dobComboSet = function(init,e){
-		if(init){
-			var output = ''
-			var y = dob.getFullYear()-30;
-			var m = dob.getMonth()+1;
-			var d = dob.getDate();
-			
-			for(var i = 0;i>-57;i--){
-				output+='<option value = "'+(y+i)+'">'+(y+i)+'</option>'
-			}
-			$dob_year.html(output);
-			y-=10
-			$dob_year.val(y)
-			$dob_month.val(m)
-			$dob_year.on('change',function(){
-				self.checkDob()
-				self.updateDays($dob_day.val(),$dob_month.val(),$dob_year.val())
-			})
-			$dob_month.on('change',function(){
-				self.checkDob()
-				self.updateDays($dob_day.val(),$dob_month.val(),$dob_year.val())
-			})
-			$dob_day.on('change',function(){
-				self.checkDob()
-			})
-			self.updateDays(d,$dob_month.val(),$dob_year.val())
-		}
-	}
-	this.zeroFill = function( number, width ){
-		width -= number.toString().length;
-		if ( width > 0 ){
-			return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
-		}
-		return number + "";
-	}
-	this.updateDays = function(d,m,y){
-		var days = new Date(y,m,0).getDate();
-		var output = ''
-		for(var i = 1;i<=days;i++){
-			output+='<option value = "'+i+'">'+self.zeroFill(i,2)+'</option>'
-		}
-		$dob_day.html(output);
-		$dob_day.val(Math.min(d,days))
-	}
-	this.toggleRadio = function(e){
-		if(e.target.tagName == 'A'){
-			var tmp = e.target.id.split('_');
-		}else{
-			var tmp = e.target.parentNode.id.split('_');
-		}
-		for(var i in this.radio_arr){
-			if(this.radio_arr[i].id == tmp[0]){
-				if(this.radio_arr[i].val == null){
-					this.radio_arr[i].val = tmp[1];
-				}else{
-					if(this.radio_arr[i].val == this.radio_arr[i].vals[1]){
-						this.radio_arr[i].val = this.radio_arr[i].vals[0];
+		var regPostcode = /([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))\s?[0-9][A-Za-z]{2})/gi;
+		if(postcode != $postcode.val().replace(' ','')){
+			$postcode.val(addSpace($postcode.val()).toUpperCase());
+			postcode = $postcode.val().replace(' ','');
+			if(regPostcode.test(postcode)){
+				pc = 1;
+				$.getJSON(self.parent.townsend_api_path+'?p='+postcode, function(data) {
+					if(data.success){
+						self.form_data['townsend'] = data;	
 					}else{
-						this.radio_arr[i].val = this.radio_arr[i].vals[1];
+						self.form_data['townsend'] = null;	
 					}
-				}
-				for(var j in this.radio_arr[i].vals){
-					var tmp = $('#'+this.radio_arr[i].id+'_'+this.radio_arr[i].vals[j]+'>img')
-					if(this.radio_arr[i].vals[j] == this.radio_arr[i].val){
-						tmp.attr('src','images/radio_on'+root.img_str+'.png')
-					}else{
-						tmp.attr('src','images/radio_off'+root.img_str+'.png')
-					}
-					self.highlightBlock(this.radio_arr[i].id+'_'+this.radio_arr[i].vals[0],'off')
-					self.checkHiddenPanels(this.radio_arr[i].id,this.radio_arr[i].val,false)	
-					self.checkP1Alert(this.radio_arr[i].id,this.radio_arr[i].val)	
-					self.checkP4Alert(this.radio_arr[i].id,this.radio_arr[i].val)	
-					self.checkP41Alert(this.radio_arr[i].id,this.radio_arr[i].val)	
-				}
-			}
-		}
-		self.storeState()
-	}
-	this.checkP4Alert = function(id,state){
-		var str = "_diabetes_arthritis_kidney_af_"
-		if(str.indexOf(id) > 0 && state == 'yes' && P4Alert == false){
-			P4Alert = true;
-			root.dialog('4C1-4')
-		}
-	}
-	this.checkP41Alert = function(id,state){
-		if(id == 'rcvd' && state == 'yes'){
-			root.dialog('4C1-5')
-		}
-	}
-	this.checkP1Alert = function(id,state){
-		if(id == 'cardio' && state == 'yes' && P1Alert == false){
-			P1Alert = true;
-			root.dialog('1C3')
-		}
-	}
-	this.checkHiddenPanels = function(id,state,snap){
-		if((id == "cholesterol" || id == "bp" )&& state != null){
-			var $p1 = $('#'+id+'_data')
-			var $p2 = $('#'+id+'_data_alt')
-			var spd = r.speed/2
-			if(snap){
-				spd = 0
-			}
-			var delay = spd*2.2
-			if($p1.css('display') == 'none' && $p2.css('display') == 'none'){
-				delay = 0	
-			}
-			
-			if(state == 'yes'){
-				$p2.slideUp(spd)
-				$p1.delay(delay).slideDown(spd)
-			}else if(state == 'no'){
-				$p2.delay(delay).slideDown(spd)
-				$p1.slideUp(spd)
-				
-			}
-			var t= 0
-			var tracker = setInterval(function(){
-				r.$nav.css('top',$('#page_'+r.page).height()+90)
-				t+=(r.speed/100)
-				if(t>=(r.speed/2)+delay){
-					clearInterval(tracker)
-				}
-			},10)		
-		}
-		if(id == "cholesterol"){
-			if(state == 'no'){
-				self.chError(2,pos)
+				});
 			}else{
+				postcode = '';
+				self.form_data['townsend'] = null	
+			}
+		}
+		function addSpace(str){
+			str = str.replace(' ','');
+			switch(str.length){
+				case 7:
+					return str.slice(0,4)+' '+str.slice(4,7)
+				break
+				case 6:
+					return str.slice(0,3)+' '+str.slice(3,6)
+				break
+				default:
+					return str;
+				break;
+			}
+		}
+	}
+	this.togglePanel = function($target,openstate){
+		if(openstate){
+			$target.addClass('heartage-activated')
+			$target.css('display','block')
+			$target.addClass('heartage-dormant')
+			setTimeout(function(){
+				var h = $target.outerHeight(true)-self.parent.size
+				self.parent.resizeLayout(h+(3.75*self.parent.size),self.parent.speed);
+				$target.addClass('heartage-zero-height');
+				$target.css('margin-top',0)
+				$target.removeClass('heartage-dormant').stop().animate({'height':h,'padding-top':'1em','padding-bottom':'1em','margin-top':'1em'},self.parent.speed,function(){
+					$(this).removeClass('heartage-zero-height')
+					$(this).attr('style','')
+					$(this).css('height','auto')
+				})
+			},50)
+			
+		}else{
+			if($target.hasClass('heartage-activated')){
+				self.parent.resizeLayout(0-$target.height(),self.parent.speed);
+				$target.stop().animate({'height':0,'padding-top':0,'padding-bottom':0,'margin-top':0},self.parent.speed,function(){
+					$target.removeAttr("style");
+					$target.hide();
+				})
+			}
+		}
+	}
+	this.lockFormItemsAfter = function(target){
+		var locked = false;
+		$('#heartage-page-form .heartage-panel-light').each(function(index, element) {
+			if(locked){
+				$(element).addClass('heartage-locked')
+				$(element).stop().fadeTo(self.parent.speed,0.3)
+				$(element).find('input').attr('disabled','true')
+				$(element).find('nhsuk-radios__input').attr('disabled','true')
+			}
+			if($(element).attr('id') == target){
+				locked = true;
+			}
+        });
+		$('#heartage-calculate-btn').addClass('heartage-locked').stop().fadeTo(self.parent.speed,0.3)
+	}
+	this.unlockFormItems = function(){
+		$('#heartage-page-form .heartage-panel-light').each(function(index, element) {
+			$(element).removeClass('heartage-locked')
+			$(element).stop().fadeTo(self.parent.speed,1)
+			$(element).find('input').attr('disabled',null)
+			$(element).find('nhsuk-radios__input').attr('disabled',null)
+        });
+		$('#heartage-calculate-btn').stop().removeClass('heartage-locked').fadeTo(self.parent.speed,1)
+	}
+	this.checkStatus = function($target,state){
+		if ($target.parents('.heartage-'+state).length || $target.hasClass('heartage-'+state)) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+	this.setUnitToggle = function(id,first,last){
+		$('#heartage-formpanel-'+id+' .heartage-'+last).stop().fadeOut(0)
+		$('#heartage-formpanel-'+id+' .heartage-unit-toggle a:last-of-type').stop().fadeOut(0).click({target: id,units: first,first:first,last:last},function(event){
+			self.toggleUnits(event.data.units,event.data.target,event.data.first,event.data.last)
+		})
+		$('#heartage-formpanel-'+id+' .heartage-unit-toggle a:first-of-type').click({target: id,units: last,first:first,last:last},function(event){
+			self.toggleUnits(event.data.units,event.data.target,event.data.first,event.data.last)
+		})
+	}
+	this.toggleUnits = function(unit_type,target,first,last){
+		if(!locked){
+			locked = true
+			var next = first
+			var $wrap = $('#heartage-'+target)
+			if(!self.checkStatus($('#heartage-formpanel-'+target),'locked')){
+				$wrap.height($wrap.height())
+				if(unit_type == first){
+					$('#heartage-formpanel-'+target+' .heartage-unit-toggle a:last-of-type').stop().fadeOut(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-unit-toggle a:first-of-type').stop().delay(self.parent.speed).fadeIn(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-'+last).stop().fadeOut(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-'+first).stop().delay(self.parent.speed).fadeIn(self.parent.speed,function(){
+						locked = false
+						$wrap.css('height',null)
+					})
+				}else{
+					$('#heartage-formpanel-'+target+' .heartage-unit-toggle a:first-of-type').stop().fadeOut(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-unit-toggle a:last-of-type').stop().delay(self.parent.speed).fadeIn(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-'+first).stop().fadeOut(self.parent.speed)
+					$('#heartage-formpanel-'+target+' .heartage-'+last).stop().delay(self.parent.speed).fadeIn(self.parent.speed,function(){
+						locked = false
+						$wrap.css('height',null)
+					})
+					next = last
+				}
+			}
+			if(self.parent.keynav){
 				setTimeout(function(){
-					self.checkCholesterol('mmol/L')
-				},1000)
+					$($('#heartage-formpanel-'+target+' .heartage-'+next+' input')[0]).focus()
+				},self.parent.speed);
 			}
 		}
-	}
-	this.bmi = function(){
-		this.__h = parseFloat($('#h_cm').val())
-		this.__w = parseFloat($('#w_kg').val())
-		if(!isNaN(this.__h)&&!isNaN(this.__w)){
-			return this.__w/(Math.pow((this.__h/100),2))
-		}else{
-			return self.defaults.bmi
-		}
-	}
-	this.restoreState = function(obj){
-		this.radio_arr = obj.radio_arr
-		townsend_score = obj.townsend_score
-		region = obj.region
-		units = obj.units
-		dob = new Date(obj.dob)
-		if(now.getFullYear()-dob.getFullYear()>=30){
-			$dob_day.val(dob.getDate())
-			$dob_month.val(dob.getMonth()+1)
-			$dob_year.val(dob.getFullYear())
-			self.updateDays(dob.getDate(),dob.getMonth()+1,dob.getFullYear())
-		}else{
-			dob = new Date();
-		}
-		
-		if(obj.postcode != 'e.g CB10 2PS'){
-			$postcode.css('color','#585858').val(obj.postcode)
-		}
-		self.__w = obj.w
-		self.__h = obj.h
-		$h_cm.val(obj.h)
-		$w_kg.val(obj.w)
-		$smoke.val(obj.smoke);
-		$ethnicity.val(obj.ethnicity)
-		$t_cholesterol_a.val(obj.t_cholesterol)
-		$hdl_cholesterol_a.val(obj.hdl_cholesterol)
-		$sys_bp.val(obj.sys_bp)
-		for(var i in self.radio_arr){
-			if(self.radio_arr[i].val != null){
-				$('#'+self.radio_arr[i].id+'_'+self.radio_arr[i].val+'>img').attr('src','images/radio_on'+root.img_str+'.png')
-			}
-			self.checkHiddenPanels(self.radio_arr[i].id,self.radio_arr[i].val,true)
-		}
-		setTimeout(function(){
-			self.checkHeight('cm')
-			self.checkWeight('kg')
-			self.checkCholesterol('mmol/L')
-			root.stateObj.clearState()
-		},1000);
-		
-	}
-	this.calc = function(){
-		if(self.checkDob()){
-			var obj = {}
-			obj.age = Math.floor((now.getTime() - dob.getTime())/31557600000);
-			obj.surv = 95-obj.age
-			obj.town = townsend_score
-			obj.smoke_cat = parseInt($('#smoke').val());
-			var smoke_str = $('#smoke option:selected').text();
-			var skipped = ''
-			var ch_str = ''
-			obj.ethrisk = parseInt($('#ethnicity').val());
-			obj.bmi = self.bmi()
-			obj.bmi_rounded = Math.round(self.bmi()*10)/10;
-			for(var i in self.radio_arr){
-				switch (self.radio_arr[i].id){
-					case "cholesterol":
-						var tc = Math.max(0.1,parseFloat($('#t_cholesterol_a').val()))
-						var th = Math.max(0.1,parseFloat($('#hdl_cholesterol_a').val()))
-						var mult = 1/th
-						ch_str = Math.round(((tc*mult)*100)/100)+':'+(th*mult)
-						if(!isNaN(tc) && !isNaN(th) && self.radio_arr[i].val == 'yes'){
-							obj.rati = tc/th
-							obj.tc = tc
-						}else{
-							obj.rati = self.defaults.rati
-							obj.tc = 0
-							skipped+='c'
-						}	
-					break;
-					case "bp":
-						var sbp = parseInt($('#sys_bp').val())
-						if(!isNaN(sbp) && self.radio_arr[i].val == 'yes'){
-							obj.sbp = sbp
-						}else{
-							obj.sbp = self.defaults.sbp;
-							skipped+='bp'
-						}	
-					break;
-					case "bpt":
-						if(self.radio_arr[i].val == 'yes'){
-							obj.b_treatedhyp = true;
-						}else{
-							obj.b_treatedhyp = self.defaults.b_treatedhyp;
-						}	
-					break;
-					case "diabetes":
-						if(self.radio_arr[i].val == 'yes'){
-							if($('#diabetes_type').val() == '1'){
-								obj.b_type1 = true;
-								obj.b_type2 = false;
-							}else{
-								obj.b_type1 = false;
-								obj.b_type2 = true;
-							}
-						}else{
-							obj.b_type1 = self.defaults.b_type1;
-							obj.b_type2 = self.defaults.b_type2;
-						}	
-					break;
-					case "arthritis":
-						if(self.radio_arr[i].val == 'yes'){
-							obj.b_ra = true;
-						}else{
-							obj.b_ra = self.defaults.b_ra;
-						}	
-					break;
-					case "kidney":
-						if(self.radio_arr[i].val == 'yes'){
-							obj.b_renal = true;
-						}else{
-							obj.b_renal = self.defaults.b_renal;
-						}	
-					break;
-					case "af":
-						if(self.radio_arr[i].val == 'yes'){
-							obj.b_AF = true;
-						}else{
-							obj.b_AF = self.defaults.b_AF;
-						}	
-					break;
-					case "rcvd":
-						if(self.radio_arr[i].val == 'yes'){
-							obj.fh_cvd = true;
-						}else{
-							obj.fh_cvd = self.defaults.fh_cvd;
-						}	
-					break;
-					case "gender":
-						gender = self.radio_arr[i].val;
-					break;
-				}
-			}
-			root.results.calc(obj,gender,skipped,smoke_str,ch_str)
-		};
-	}
-	this.validate = function(page){
-		scrollH = 1000
-		var output = true
-		switch(page){
-			case 1:
-				for(var i=0;i<2;i++){
-					if(this.radio_arr[i].val == null){
-						self.highlightBlock(this.radio_arr[i].id+'_'+this.radio_arr[i].vals[0],'on')
-						output = false
-					}
-				}
-				if(this.radio_arr[1].val == 'yes'){
-					root.dialog('1C3')
-					output = false
-				}
-				
-			break;
-			case 2:
-				if(self.__h >= 5 && self.__h <= 241){
-					self.highlightBlock('h_cm','off')
-				}else{
-					output = false
-					self.highlightBlock('h_cm','on')
-				}
-				if(self.__w >= 2 && self.__w <= 318){
-					self.highlightBlock('w_kg','off')
-				}else{
-					output = false
-					self.highlightBlock('w_kg','on')
-				}
-				
-				
-			break;
-			case 3:
-				for(var i=2;i<5;i++){
-					if(this.radio_arr[i].val == null){
-						self.highlightBlock(this.radio_arr[i].id+'_'+this.radio_arr[i].vals[0],'on')
-						output = false
-					}
-					
-				}
-				var rati = self.__t_ch/self.__hdl_ch
-				if(this.radio_arr[2].val == 'yes' &&  (self.__t_ch<=0 || self.__hdl_ch<=0 || rati > 12.5 || rati < 1 )){
-					self.highlightBlock('t_cholesterol_a','on')
-					output = false
-				}else{
-					self.highlightBlock('t_cholesterol_a','off')
-					
-				
-				}
-				if(this.radio_arr[3].val == 'yes' &&  isNaN(parseFloat($sys_bp.val()))){
-					self.highlightBlock('sys_bp','on')
-					output = false
-					
-				}else{
-					self.highlightBlock('sys_bp','off')
-					
-				}
-				
-			break;
-			case 4:
-				for(var i=5;i<10;i++){
-					if(this.radio_arr[i].val == null){
-						self.highlightBlock(this.radio_arr[i].id+'_'+this.radio_arr[i].vals[0],'on')
-						output = false
-					}
-				}
-				
-			break;
-		}
-		if(!output && root.qstr.layout == 'phone'){
-			window.scroll(0,scrollH)
-		}
-		return output
 	}
 	this.getData = function(obj){
-		if(!isNaN( this.__h)){
-			obj.hcm = this.__h
+		if(!isNaN(self.form_data.height)){
+			obj.hcm = self.form_data.height;
 		}
-		if(!isNaN( this.__w)){
-			obj.wkg = this.__w
+		if(!isNaN(self.form_data.weight)){
+			obj.wkg = self.form_data.weight;
 		}
-		if(this.__hdl_ch>0){
-			obj.chs = $hdl_cholesterol_a.val()
+		if(!self.form_data.bp_skipped){
+			obj.sbp = parseInt(self.form_data.bp)
+		}else{
+			obj.sbp = 0;
 		}
-		if(this.__t_ch>0){
-			obj.cht = $t_cholesterol_a.val()
+		if(!isNaN(self.form_data.smoke)){
+			obj.smk = self.form_data.smoke;
+		}
+		if(self.form_data.cholesterol != null){
+			if(!isNaN(self.form_data.cholesterol.hdl)){
+				obj.chs = parseFloat(self.form_data.cholesterol.hdl);
+			}
+			if(!isNaN(self.form_data.cholesterol.total)){
+				obj.cht = parseFloat(self.form_data.cholesterol.total);
+			}
+			if(obj.cht > 0 && obj.chs > 0 && !self.form_data.ch_skipped){
+				obj.ch = obj.cht / obj.chs
+			}else{
+				obj.ch = 0;
+			}
+		}
+		if(self.form_data.townsend != null){
+			obj.lsoa11 = self.form_data.townsend.lsoa11;
+			obj.upper_tier_LA = self.form_data.townsend.upper_tier_LA;
+			obj.region = self.form_data.townsend.region;
+			obj.r = self.form_data.townsend.region;
+			obj.area_name = self.form_data.townsend.area_name;
+			obj.tn = self.form_data.townsend.townsend_score	
+		}
+		obj.pc = pc;
+		if(!isNaN(self.form_data.ethrisk)){
+			obj.et = $('input[name=heartage-eth]:checked').siblings('label').html()
+			obj.eth = parseInt(self.form_data.eth);
+		}else{
+			obj.et = 'Not known'
+			obj.eth = 0;
 		}
 		return obj
 	}
-	this.highlightBlock = function(id,val){
-		var $tmp = $('#'+id).parent().parent().parent()
-		if(val == 'on'){
-			scrollH = Math.min($tmp.position().top,scrollH)
-			$tmp.css('background-color','#fad2d4')
-		}else{
-			$tmp.css('background-color','#ededed')
-		}
+	function countDecimals(value) {
+		if (Math.floor(value) !== value)
+			return value.toString().split(".")[1].length || 0;
+		return 0;
 	}
-	this.clear = function(){
-	}
-	this.initRadio();
-	this.dobComboSet(true,null)
-	this.checkHeight('cm')
-	this.checkWeight('kg')
-	this.checkCholesterol('mmol/L')
 }
